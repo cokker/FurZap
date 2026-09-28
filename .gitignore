@@ -1,0 +1,12 @@
+# Local user configuration, profiles, logs and backups
+/data/
+# Generated application and release archives
+/FurZap.exe
+/dist/
+*.zip
+# Local build/editor output
+.vs/
+obj/
+*.pdb
+*.user
+*.suo

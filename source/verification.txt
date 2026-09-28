@@ -1,0 +1,148 @@
+FurZap 1.2.1 — 2026-09-28
+Build: Windows x64 GUI PE, Microsoft .NET Framework 4.7.2 reference assemblies.
+102 logic checks passed; UI regression scenario passed on Mono/Xvfb.
+UI coverage: clean lists, font/scale changes, true edits, undo, switching files,
+repeated popup selection/close, six appearance applications, focus switches,
+frame scheduling, pause/resume on hiding; large window and return at 150%.
+Screenshots inspected after resize and label width correction.
+Animation target: 60 Hz; measured preview FPS is recorded below. Actual native
+Windows FPS and Windows-specific ToolStrip implementation still need Windows
+execution. The erroneous disposal inside Closed has been removed from code.
+No Windows driver, SCM/UAC or real network tests executed in this environment.
+Timer API reference: https://learn.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod
+
+PASS: all supplied strategies discovered
+PASS: parse general.bat
+PASS: profiles retained: general.bat
+PASS: parse general (ALT).bat
+PASS: profiles retained: general (ALT).bat
+PASS: parse general (ALT2).bat
+PASS: profiles retained: general (ALT2).bat
+PASS: parse general (ALT3).bat
+PASS: profiles retained: general (ALT3).bat
+PASS: parse general (ALT4).bat
+PASS: profiles retained: general (ALT4).bat
+PASS: parse general (ALT5).bat
+PASS: profiles retained: general (ALT5).bat
+PASS: parse general (ALT6).bat
+PASS: profiles retained: general (ALT6).bat
+PASS: parse general (ALT7).bat
+PASS: profiles retained: general (ALT7).bat
+PASS: parse general (ALT8).bat
+PASS: profiles retained: general (ALT8).bat
+PASS: parse general (ALT9).bat
+PASS: profiles retained: general (ALT9).bat
+PASS: parse general (ALT10).bat
+PASS: profiles retained: general (ALT10).bat
+PASS: parse general (ALT11).bat
+PASS: profiles retained: general (ALT11).bat
+PASS: parse general (ALT12).bat
+PASS: profiles retained: general (ALT12).bat
+PASS: parse general (ALT13).bat
+PASS: profiles retained: general (ALT13).bat
+PASS: parse general (EXP).bat
+PASS: profiles retained: general (EXP).bat
+PASS: parse general (FAKE TLS AUTO ALT).bat
+PASS: profiles retained: general (FAKE TLS AUTO ALT).bat
+PASS: parse general (FAKE TLS AUTO ALT2).bat
+PASS: profiles retained: general (FAKE TLS AUTO ALT2).bat
+PASS: parse general (FAKE TLS AUTO ALT3).bat
+PASS: profiles retained: general (FAKE TLS AUTO ALT3).bat
+PASS: parse general (FAKE TLS AUTO).bat
+PASS: profiles retained: general (FAKE TLS AUTO).bat
+PASS: parse general (SIMPLE FAKE ALT).bat
+PASS: profiles retained: general (SIMPLE FAKE ALT).bat
+PASS: parse general (SIMPLE FAKE ALT2).bat
+PASS: profiles retained: general (SIMPLE FAKE ALT2).bat
+PASS: parse general (SIMPLE FAKE).bat
+PASS: profiles retained: general (SIMPLE FAKE).bat
+PASS: port list normalization
+PASS: invalid ports: 0
+PASS: invalid ports: 65536
+PASS: invalid ports: 443-80
+PASS: invalid ports: 1&calc
+PASS: invalid ports: -1
+PASS: invalid ports: 01
+PASS: invalid ports: 1,
+PASS: invalid ports: 
+PASS: invalid ports: 1-2-3
+PASS: valid IPv4 and IPv6 networks
+PASS: invalid IP: 999.1.2.3
+PASS: invalid IP: 1.2.3.4/33
+PASS: invalid IP: 1.2.3.4/-1
+PASS: invalid IP: 127.1
+PASS: invalid IP: 2001:db8::/129
+PASS: reject URL in domains
+PASS: reject HTML update
+PASS: TCP-only mode substitution
+PASS: UDP-only mode substitution
+PASS: any IP mode
+PASS: restore loaded IP list
+PASS: restore none mode
+PASS: list write
+PASS: backups created
+PASS: list path traversal rejected
+PASS: unknown strategy rejected
+PASS: fake replacement exact
+PASS: quote plain value
+PASS: quote trailing slash
+PASS: escape embedded quote
+PASS: settings persistence
+PASS: named profile saved
+PASS: existing profile cannot be overwritten silently
+PASS: invalid profile name: ../escape
+PASS: invalid profile name: CON
+PASS: invalid profile name: test/path
+PASS: invalid profile name: 
+PASS: invalid profile name: a.b
+PASS: invalid profile name: LPT1
+PASS: snapshot restores exact list bytes
+PASS: snapshot restores file absence
+PASS: tampered snapshot rejected
+PASS: invalid snapshot leaves live config untouched
+PASS: working checkpoint and automatic history
+PASS: actionable access error
+PASS: newline normalization does not dirty list
+PASS: list content edits detected
+PASS: actual trailing newline edit detected
+PASS: dragon transition blends both poses midway
+PASS: interrupted pose transition remains continuous
+PASS: dragon blend reaches target
+PASS: reduced motion changes pose immediately
+PASS: scan restores running service
+PASS: scan keeps stopped service stopped
+PASS: cancel restores previous process and strategy
+PASS: engine failure recorded and stopped state restored
+ALL 102 CHECKS PASSED
+
+PASS: list is clean after navigation and layout
+PASS: font/format/scale do not dirty the list
+PASS: typing creates unsaved changes
+PASS: undo returns to saved state
+PASS: programmatic content difference detected
+PASS: restoring exact text clears dirty state
+PASS: can leave unchanged list without a prompt
+PASS: switching loaded files does not dirty editor
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+Measured preview: 49.4 UI frames/s; 49.4 dragon paints/s over 2.02 s. Linux/Xvfb, not a Windows FPS guarantee.
+Timer pulses=422, posts=212, skipped=210, dragon mean paint ms=5.40
+PASS: frame loop is faster than previous 25 Hz cap
+PASS: frame loop pauses while hidden
+PASS: frame loop resumes when shown

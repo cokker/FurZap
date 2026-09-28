@@ -1,0 +1,17 @@
+Mode: built-in image_gen, transparent_background=true.
+Use case: stylized-concept.
+Transparent desktop mascot for FurZap: adorable polished fluffy orange furry dragon, full body sitting, cream muzzle and belly, orange eyes, dark charcoal paws and feet, cream horns, two wings and one curled tail. Professional detailed cel-shaded sticker illustration, friendly gentle smile, clear anatomy, four toes on each visible foot, full character visible, transparent margin, no background/text/logo/watermark. Single still sprite animated in code by gentle floating and breathing.
+The PNG is embedded as FurZap.Dragon.png in the EXE.
+
+Reaction asset: dragon-happy.png. Built-in image_gen edit, transparent_background=true.
+Reference: dragon.png. Keep identical full-body sitting pose, silhouette, size, framing,
+colors, horns, wings, paws, feet and tail. Change only the expression: happy wink,
+other eye orange and a brighter smile. No additional objects, text or background.
+Both sprites are embedded in FurZap.exe.
+
+
+Sleeping sprite, built-in image generation, 2026-09-28:
+Use case: identity-preserve. Same orange fluffy FurZap dragon, keep seated pose,
+framing, proportions, horns, wings, tail, colors and lighting. Both eyes gently
+closed, tiny sleepy smile, head slightly drooping. Full body, transparent alpha,
+no lettering, symbols or objects. Saved asset: assets/dragon-sleep.png.

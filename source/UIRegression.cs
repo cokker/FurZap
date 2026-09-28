@@ -7,6 +7,7 @@ using System.Windows.Forms;
 namespace FurZap {
 public partial class MainForm {
  internal void VerifyEditorUi(Action<bool,string> check){
+  foreach(string section in new[]{"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"}){Navigate(section);check(Opacity==1,"window stays opaque on "+section);AnimateFrame(Motion.Now+.08);check(Opacity==1,"window stays opaque during animation on "+section);}
   Navigate("Списки");check(!Dirty,"list is clean after navigation and layout");var edit=ListEditor;string original=edit.Text;edit.Font=new Font("Consolas",14);edit.SelectAll();edit.SelectionColor=Color.White;edit.Select(0,0);RenderPageScale();check(!Dirty,"font/format/scale do not dirty the list");
   edit.Focus();edit.SelectionStart=edit.TextLength;edit.SelectedText="\nnew.example";check(Dirty,"typing creates unsaved changes");edit.Undo();check(!Dirty,"undo returns to saved state");
   edit.Text=original+"\nchanged.example";check(Dirty,"programmatic content difference detected");edit.Text=original;check(!Dirty,"restoring exact text clears dirty state");

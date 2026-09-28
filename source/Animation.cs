@@ -51,10 +51,9 @@ public class Dragon:Control {
  protected override void Dispose(bool disposing){if(disposing){ReleaseCache();ResetBackground(this,EventArgs.Empty);if(backgroundParent!=null){backgroundParent.SizeChanged-=ResetBackground;backgroundParent.BackColorChanged-=ResetBackground;}}base.Dispose(disposing);}
 }
 public partial class MainForm {
- double lastFrame,nextStateRefresh,navigationStarted=-1;public int AnimationFrames;
+ double lastFrame,nextStateRefresh;public int AnimationFrames;
  void AnimateFrame(double now){AnimationFrames++;Motion.Enabled=B.Get("motion","yes")!="no";Motion.Delta=Math.Max(0,now-lastFrame);lastFrame=now;Motion.Pulse(now);if(repaintAfter>0&&now>=repaintAfter){repaintAfter=0;ViewLayout();RepaintTree(this);}SidebarPet.Reduced=!Motion.Enabled;SidebarPet.Advance(now);if(HeroBox!=null&&!HeroBox.IsDisposed){HeroBox.Pet.Reduced=!Motion.Enabled;HeroBox.Pet.Advance(now);}
   if(noticeUntil>0){Rectangle old=Notice.Bounds;double remaining=noticeUntil-now;float slide=Motion.Enabled?(1-Motion.Ease((float)((3.6-remaining)/.18)))+1-Motion.Ease((float)(remaining/.18)):0;Notice.Top=Notice.Parent.ClientSize.Height-Notice.Height-48+(int)(slide*20);if(remaining<=0){Notice.Visible=false;noticeUntil=0;}if(old!=Notice.Bounds||!Notice.Visible)Notice.Parent.Invalidate(old,true);}
-  if(navigationStarted>=0){float t=Motion.Enabled?Motion.Ease((float)((now-navigationStarted)/.15)):1;Opacity=.94+.06*t;if(t>=1)navigationStarted=-1;}
   if(now>=nextStateRefresh){nextStateRefresh=now+2;RefreshState();}
  }
  protected override void OnVisibleChanged(EventArgs e){base.OnVisibleChanged(e);UpdateFramePump();}

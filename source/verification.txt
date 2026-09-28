@@ -1,3 +1,58 @@
+FurZap 1.2.2 — исправление прозрачности окна
+102 проверки логики пройдены.
+PASS: window stays opaque on Главная
+PASS: window stays opaque during animation on Главная
+PASS: window stays opaque on Стратегии
+PASS: window stays opaque during animation on Стратегии
+PASS: window stays opaque on Служба
+PASS: window stays opaque during animation on Служба
+PASS: window stays opaque on Настройки
+PASS: window stays opaque during animation on Настройки
+PASS: window stays opaque on Списки
+PASS: window stays opaque during animation on Списки
+PASS: window stays opaque on Инструменты
+PASS: window stays opaque during animation on Инструменты
+PASS: window stays opaque on Проверки
+PASS: window stays opaque during animation on Проверки
+PASS: window stays opaque on Профили
+PASS: window stays opaque during animation on Профили
+PASS: window stays opaque on Журнал
+PASS: window stays opaque during animation on Журнал
+PASS: list is clean after navigation and layout
+PASS: font/format/scale do not dirty the list
+PASS: typing creates unsaved changes
+PASS: undo returns to saved state
+PASS: programmatic content difference detected
+PASS: restoring exact text clears dirty state
+PASS: can leave unchanged list without a prompt
+PASS: switching loaded files does not dirty editor
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+PASS: popup survives native close callback
+PASS: popup survives native close callback
+PASS: appearance applied and page rebuilt
+Measured preview: 60.4 UI frames/s; 60.4 dragon paints/s over 2.02 s. Linux/Xvfb, not a Windows FPS guarantee.
+Timer pulses=375, posts=297, skipped=78, dragon mean paint ms=2.26
+PASS: frame loop is faster than previous 25 Hz cap
+PASS: frame loop pauses while hidden
+PASS: frame loop resumes when shown
+
+Нативное исполнение под Windows не проверялось.
+
+Предыдущая проверка:
 FurZap 1.2.1 — 2026-09-28
 Build: Windows x64 GUI PE, Microsoft .NET Framework 4.7.2 reference assemblies.
 102 logic checks passed; UI regression scenario passed on Mono/Xvfb.

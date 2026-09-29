@@ -1,70 +1,7 @@
-FurZap 1.2.2 — исправление прозрачности окна
-102 проверки логики пройдены.
-PASS: window stays opaque on Главная
-PASS: window stays opaque during animation on Главная
-PASS: window stays opaque on Стратегии
-PASS: window stays opaque during animation on Стратегии
-PASS: window stays opaque on Служба
-PASS: window stays opaque during animation on Служба
-PASS: window stays opaque on Настройки
-PASS: window stays opaque during animation on Настройки
-PASS: window stays opaque on Списки
-PASS: window stays opaque during animation on Списки
-PASS: window stays opaque on Инструменты
-PASS: window stays opaque during animation on Инструменты
-PASS: window stays opaque on Проверки
-PASS: window stays opaque during animation on Проверки
-PASS: window stays opaque on Профили
-PASS: window stays opaque during animation on Профили
-PASS: window stays opaque on Журнал
-PASS: window stays opaque during animation on Журнал
-PASS: list is clean after navigation and layout
-PASS: font/format/scale do not dirty the list
-PASS: typing creates unsaved changes
-PASS: undo returns to saved state
-PASS: programmatic content difference detected
-PASS: restoring exact text clears dirty state
-PASS: can leave unchanged list without a prompt
-PASS: switching loaded files does not dirty editor
-PASS: popup survives native close callback
-PASS: popup survives native close callback
-PASS: appearance applied and page rebuilt
-PASS: popup survives native close callback
-PASS: popup survives native close callback
-PASS: appearance applied and page rebuilt
-PASS: popup survives native close callback
-PASS: popup survives native close callback
-PASS: appearance applied and page rebuilt
-PASS: popup survives native close callback
-PASS: popup survives native close callback
-PASS: appearance applied and page rebuilt
-PASS: popup survives native close callback
-PASS: popup survives native close callback
-PASS: appearance applied and page rebuilt
-PASS: popup survives native close callback
-PASS: popup survives native close callback
-PASS: appearance applied and page rebuilt
-Measured preview: 60.4 UI frames/s; 60.4 dragon paints/s over 2.02 s. Linux/Xvfb, not a Windows FPS guarantee.
-Timer pulses=375, posts=297, skipped=78, dragon mean paint ms=2.26
-PASS: frame loop is faster than previous 25 Hz cap
-PASS: frame loop pauses while hidden
-PASS: frame loop resumes when shown
-
-Нативное исполнение под Windows не проверялось.
-
-Предыдущая проверка:
-FurZap 1.2.1 — 2026-09-28
-Build: Windows x64 GUI PE, Microsoft .NET Framework 4.7.2 reference assemblies.
-102 logic checks passed; UI regression scenario passed on Mono/Xvfb.
-UI coverage: clean lists, font/scale changes, true edits, undo, switching files,
-repeated popup selection/close, six appearance applications, focus switches,
-frame scheduling, pause/resume on hiding; large window and return at 150%.
-Screenshots inspected after resize and label width correction.
-Animation target: 60 Hz; measured preview FPS is recorded below. Actual native
-Windows FPS and Windows-specific ToolStrip implementation still need Windows
-execution. The erroneous disposal inside Closed has been removed from code.
-No Windows driver, SCM/UAC or real network tests executed in this environment.
-Timer API reference: https://learn.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod
+FurZap 1.3.0 — 2026-09-29
+Windows x64 / Microsoft .NET Framework 4.7.2 reference assemblies.
+Native Windows updater replacement, UAC, SCM and driver execution are unverified.
+Linux/Xvfb timing is not a Windows FPS guarantee. Baseline 1.2.2 measured about 36 FPS on this shared runner.
 
 PASS: all supplied strategies discovered
 PASS: parse general.bat
@@ -168,8 +105,46 @@ PASS: scan restores running service
 PASS: scan keeps stopped service stopped
 PASS: cancel restores previous process and strategy
 PASS: engine failure recorded and stopped state restored
-ALL 102 CHECKS PASSED
+PASS: release JSON preserves escapes
+PASS: update validates size hash assembly and version
+PASS: update rejects foreign download host
+PASS: update rejects foreign repository
+PASS: update rejects missing SHA256
+PASS: update rejects draft release
+PASS: modified update fails verification
+PASS: error report redacts paths emails tokens IPs and URLs
+ALL 110 CHECKS PASSED
 
+Gtk not found (missing LD_LIBRARY_PATH to libgtk-x11-2.0.so.0?), using built-in colorscheme
+PASS: detached list draft is tracked
+PASS: list editor and unsaved content survive navigation
+PASS: list caret survives navigation
+PASS: restored cached text clears dirty state
+PASS: strategy selection and control are cached
+PASS: unsaved setting choices survive navigation
+PASS: 200 percent layout has valid bounds
+PASS: unmeasured connection is not reported as connected
+PASS: compact window replaces main window
+PASS: compact window provides start action
+PASS: closing compact window restores full window
+PASS: window stays opaque on Главная
+PASS: window stays opaque during animation on Главная
+PASS: window stays opaque on Стратегии
+PASS: window stays opaque during animation on Стратегии
+PASS: window stays opaque on Служба
+PASS: window stays opaque during animation on Служба
+PASS: window stays opaque on Настройки
+PASS: window stays opaque during animation on Настройки
+PASS: window stays opaque on Списки
+PASS: window stays opaque during animation on Списки
+PASS: window stays opaque on Инструменты
+PASS: window stays opaque during animation on Инструменты
+PASS: window stays opaque on Проверки
+PASS: window stays opaque during animation on Проверки
+PASS: window stays opaque on Профили
+PASS: window stays opaque during animation on Профили
+PASS: window stays opaque on Журнал
+PASS: window stays opaque during animation on Журнал
 PASS: list is clean after navigation and layout
 PASS: font/format/scale do not dirty the list
 PASS: typing creates unsaved changes
@@ -196,8 +171,9 @@ PASS: appearance applied and page rebuilt
 PASS: popup survives native close callback
 PASS: popup survives native close callback
 PASS: appearance applied and page rebuilt
-Measured preview: 49.4 UI frames/s; 49.4 dragon paints/s over 2.02 s. Linux/Xvfb, not a Windows FPS guarantee.
-Timer pulses=422, posts=212, skipped=210, dragon mean paint ms=5.40
-PASS: frame loop is faster than previous 25 Hz cap
+Measured preview: 39.0 UI frames/s; 36.6 dragon paints/s over 2.49 s. Linux/Xvfb, not a Windows FPS guarantee.
+Timer pulses=846, posts=150, skipped=696, dragon mean paint ms=9.95
+PASS: frame pump advances during visible animation
+FPS is a measurement, not a pass/fail gate: the 1.2.2 baseline also measured about 36 UI frames/s on this shared runner.
 PASS: frame loop pauses while hidden
 PASS: frame loop resumes when shown

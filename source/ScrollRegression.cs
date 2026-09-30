@@ -19,7 +19,7 @@ public partial class MainForm {
      Navigate(section=="Главная"?"Служба":"Главная");Navigate(section);
      check(Math.Abs(Page.AutoScrollPosition.Y-position)<=1,"cached scroll restored "+section+" expected="+position+" actual="+Page.AutoScrollPosition.Y);
      ViewLayout();Page.AutoScrollPosition=Point.Empty;
-     check(original.All(x=>x.Key.Top==x.Value),"no blank offset after relayout "+section);
+     check(original.All(x=>x.Key.Top==x.Value),"no blank offset after relayout "+section+" "+String.Join(\";\",original.Where(x=>x.Key.Top!=x.Value).Select(x=>x.Value+\"->\"+x.Key.Top)));
      for(int i=0;i<5;i++)router.Route(target,120,new IntPtr(120<<16),IntPtr.Zero);
      check(Page.AutoScrollPosition.Y==0&&Page.Top==0,"upper boundary clamped "+section);
     }

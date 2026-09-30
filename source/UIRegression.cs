@@ -30,13 +30,13 @@ public static class UIRegression {
   using(var form=new MainForm(backend))using(var timer=new System.Windows.Forms.Timer{Interval=400}){
    int stage=0,startFrames=0,startPaints=0;double startTime=0;form.Shown+=(s,e)=>timer.Start();
    timer.Tick+=(s,e)=>{try{switch(stage++){
-    case 0:form.VerifyComfortUi(check,dir);form.VerifyEditorUi(check);break;
+    case 0:form.VerifyComfortUi(check,dir);form.VerifyEditorUi(check);form.VerifyScrollUi(check);break;
     case 1:case 2:case 3:case 4:case 5:case 6:form.VerifyPopupUi(stage,check);break;
     case 7:form.ToggleFocusUi();break;
     case 8:form.Screenshot(Path.Combine(dir,"toggles.png"));form.BeginFrameSample();break;
     case 9:startFrames=form.AnimationFrames;startPaints=form.DragonPaints;startTime=Motion.Now;break;
     case 10:form.PetReaction();break;
-    case 14:double elapsed=Motion.Now-startTime;double callbacks=(form.AnimationFrames-startFrames)/elapsed,paints=(form.DragonPaints-startPaints)/elapsed;report.Add("Measured preview: "+callbacks.ToString("F1")+" UI frames/s; "+paints.ToString("F1")+" dragon paints/s over "+elapsed.ToString("F2")+" s. Linux/Xvfb, not a Windows FPS guarantee.");report.Add(form.FrameStats);check(form.AnimationFrames>startFrames,"frame pump advances during visible animation");report.Add("FPS is a measurement, not a pass/fail gate: the 1.2.2 baseline also measured about 36 UI frames/s on this shared runner.");form.Screenshot(Path.Combine(dir,"home.png"));form.Hide();startFrames=form.AnimationFrames;break;
+    case 14:double elapsed=Motion.Now-startTime;double callbacks=(form.AnimationFrames-startFrames)/elapsed,paints=(form.DragonPaints-startPaints)/elapsed;report.Add("Measured preview: "+callbacks.ToString("F1")+" UI frames/s; "+paints.ToString("F1")+" dragon paints/s over "+elapsed.ToString("F2")+" s. Runtime: "+Environment.OSVersion+".");report.Add(form.FrameStats);check(form.AnimationFrames>startFrames,"frame pump advances during visible animation");report.Add("FPS is a measurement, not a pass/fail gate: the 1.2.2 baseline also measured about 36 UI frames/s on this shared runner.");form.Screenshot(Path.Combine(dir,"home.png"));form.Hide();startFrames=form.AnimationFrames;break;
     case 15:check(form.AnimationFrames==startFrames,"frame loop pauses while hidden");form.Show();break;
     case 16:check(form.AnimationFrames>startFrames,"frame loop resumes when shown");timer.Stop();form.Close();break;
    }}catch(Exception ex){result=1;report.Add(ex.ToString());timer.Stop();form.Close();}};

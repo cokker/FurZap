@@ -29,12 +29,12 @@ public partial class MainForm {
    case 12:Close();break;
   }
  }
- void SavePage(){if(Subtitle.Text.Length==0||Page.Controls.Count==0)return;Pages[Subtitle.Text]=new SavedPage{Controls=Page.Controls.Cast<Control>().ToArray(),Hero=HeroBox,Editor=ListEditor,Log=LogView,Baseline=ListBaseline,Strategies=StrategyList,Applied=AppliedLabel,Layout=HomeLayout,Scroll=Page.AutoScrollPosition,Bounds=PageBounds,Fonts=PageFonts,Stretch=PageStretch};}
+ void SavePage(){if(Subtitle.Text.Length==0||Page.Controls.Count==0)return;Pages[Subtitle.Text]=new SavedPage{Controls=Page.Controls.Cast<Control>().ToArray(),Hero=HeroBox,Editor=ListEditor,Log=LogView,Baseline=ListBaseline,Strategies=StrategyList,Applied=AppliedLabel,Layout=HomeLayout,Scroll=Page.AutoScrollPosition,Bounds=PageBounds,Fonts=PageFonts,Stretch=PageStretch};Page.AutoScrollPosition=Point.Empty;}
  bool RestorePage(string name){SavedPage p;if(!Pages.TryGetValue(name,out p))return false;Page.Controls.AddRange(p.Controls);HeroBox=p.Hero;ListEditor=p.Editor;ListBaseline=p.Baseline;LogView=p.Log;StrategyList=p.Strategies;AppliedLabel=p.Applied;HomeLayout=p.Layout;PageBounds=p.Bounds;PageFonts=p.Fonts;PageStretch=p.Stretch;if(StrategyList!=null){StrategyList.Applied=Selected;StrategyList.Invalidate();}if(AppliedLabel!=null)AppliedLabel.Text="✓ Выбрано: "+Path.GetFileNameWithoutExtension(Selected);if(LogView!=null)LogView.Text=Journal.ToString();return true;}
  void RestoreScroll(string name){SavedPage p;if(Pages.TryGetValue(name,out p))Page.AutoScrollPosition=new Point(-p.Scroll.X,-p.Scroll.Y);}
  bool HasUnsavedLists(){if(Dirty)return true;SavedPage p;return Subtitle.Text!="Списки"&&Pages.TryGetValue("Списки",out p)&&p.Editor!=null&&ListDocument.Changed(p.Baseline,p.Editor.Text);}
  void ReloadPage(string name){if(Busy)return;SavePage();foreach(var key in Pages.Keys.ToArray()){var p=Pages[key];if(p.Editor!=null&&ListDocument.Changed(p.Baseline,p.Editor.Text))continue;foreach(var c in p.Controls)c.Dispose();Pages.Remove(key);}Page.Controls.Clear();Subtitle.Text="";Navigate(name);}
- void AnimatePage(double now){if(pageSlide<0||Page==null)return;float t=Motion.Enabled?Motion.Ease((float)((now-pageSlide)/.16)):1;Page.Top=(int)(10*(1-t));if(t>=1){Page.Top=0;pageSlide=-1;}}
+ void AnimatePage(double now){if(pageSlide<0||Page==null)return;Page.Top=0;pageSlide=-1;}
  void DisposeComfort(){if(Mini!=null&&!Mini.IsDisposed)Mini.Dispose();foreach(var p in Pages.Values)foreach(var c in p.Controls)if(c.Parent!=Page&&!c.IsDisposed)c.Dispose();Pages.Clear();Hints.Dispose();}
  void AddHints(Control c){foreach(Control x in c.Controls){if(x is FButton||x is FToggle||x is FCombo)Hints.SetToolTip(x,x.AccessibleName??x.Text);AddHints(x);}}
  string RuntimeContext(){return Selected+"|"+B.ActiveStrategy+"|"+B.Running+"|"+B.ServiceState();}

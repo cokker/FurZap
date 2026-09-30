@@ -1,0 +1,51 @@
+name: Windows build, UI regression and release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile existing Windows sources
+        shell: pwsh
+        run: |
+          $compiler = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          Push-Location source
+          & $compiler /nologo /codepage:65001 /resource:..\assets\dragon.png,FurZap.Dragon.png /resource:..\assets\dragon-happy.png,FurZap.DragonHappy.png /resource:..\assets\dragon-sleep.png,FurZap.DragonSleep.png /target:winexe /platform:x64 /optimize+ /win32manifest:app.manifest /win32icon:..\furzap.ico /out:..\FurZap.exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.ServiceProcess.dll /reference:System.Core.dll *.cs
+          if ($LASTEXITCODE -ne 0) { throw "Compilation failed" }
+          Pop-Location
+      - name: Run logic and Windows UI regressions
+        shell: pwsh
+        run: |
+          $p = Start-Process .\FurZap.exe -ArgumentList '--self-test' -Wait -PassThru -RedirectStandardOutput logic-tests.txt -RedirectStandardError logic-errors.txt
+          if ($p.ExitCode -ne 0) { throw "Logic tests failed: $($p.ExitCode)" }
+          $p = Start-Process .\FurZap.exe -ArgumentList '--preview --ui-regression --screenshots verification' -PassThru -RedirectStandardOutput ui-tests.txt -RedirectStandardError ui-errors.txt
+          if (!$p.WaitForExit(180000)) { $p.Kill(); throw "UI regression timed out" }
+          if ($p.ExitCode -ne 0) { throw "UI tests failed: $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-verification
+          path: |
+            *-tests.txt
+            *-errors.txt
+            verification/
+      - name: Package full distribution and publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = [Reflection.AssemblyName]::GetAssemblyName("$pwd\FurZap.exe").Version
+          $tag = "v$($version.Major).$($version.Minor).$($version.Build)"
+          New-Item -ItemType Directory -Path package | Out-Null
+          Copy-Item FurZap.exe,FurZap.exe.config,furzap.ico,README.md,README.txt,RELEASE_NOTES.md,engine,assets,source,verification -Destination package -Recurse
+          Compress-Archive -Path package\* -DestinationPath FurZap-Windows-x64.zip
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) { throw "Release already exists; refusing to replace it" }
+          gh release create $tag FurZap.exe FurZap-Windows-x64.zip --target "${{ github.sha }}" --title "FurZap $tag" --notes-file RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw "Release failed" }

@@ -66,8 +66,8 @@ public partial class MainForm:Form {
   SavePage();Page.SuspendLayout();try{Page.Controls.Clear();Page.AutoScrollPosition=Point.Empty;Subtitle.Text=name;
   if(!RestorePage(name)){ListEditor=null;ListBaseline="";PageBounds=new Dictionary<Control,Rectangle>();PageFonts=new Dictionary<Control,Font>();PageStretch=new Dictionary<Control,bool>();HomeLayout=delegate{};HeroBox=null;LogView=null;StrategyList=null;AppliedLabel=null;
    switch(name){case "Главная":Home();break;case "Стратегии":Strategies();break;case "Служба":Service();break;case "Настройки":Settings();break;case "Списки":Lists();break;case "Инструменты":Tools();break;case "Журнал":Logs();break;case "Проверки":ChecksPage();break;case "Профили":ProfilesPage();break;}ApplyPageScale();}
-  foreach(var n in Nav){n.Selected=n.Text==name;n.Invalidate();}ViewLayout();HomeLayout();RestoreScroll(name);AddHints(Page);RefreshState();pageSlide=Motion.Now;
-  }finally{Page.ResumeLayout(true);}repaintAfter=Motion.Now+.20;
+  foreach(var n in Nav){n.Selected=n.Text==name;n.Invalidate();}ViewLayout();HomeLayout();AddHints(Page);RefreshState();pageSlide=Motion.Now;
+  }finally{Page.ResumeLayout(true);}RestoreScroll(name);repaintAfter=Motion.Now+.20;
  }
 
  void Home(){

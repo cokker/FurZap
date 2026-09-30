@@ -17,7 +17,7 @@ public partial class MainForm {
      check(max==0||Page.AutoScrollPosition.Y<0,"wheel over child scrolls "+section+" max="+maximized);
      Page.AutoScrollPosition=new Point(0,100000);int position=Page.AutoScrollPosition.Y;
      Navigate(section=="Главная"?"Служба":"Главная");Navigate(section);
-     check(Math.Abs(Page.AutoScrollPosition.Y-position)<=1,"cached scroll restored "+section);
+     check(Math.Abs(Page.AutoScrollPosition.Y-position)<=1,"cached scroll restored "+section+" expected="+position+" actual="+Page.AutoScrollPosition.Y);
      ViewLayout();Page.AutoScrollPosition=Point.Empty;
      check(original.All(x=>x.Key.Top==x.Value),"no blank offset after relayout "+section);
      for(int i=0;i<5;i++)router.Route(target,120,new IntPtr(120<<16),IntPtr.Zero);

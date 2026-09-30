@@ -23,9 +23,12 @@ jobs:
         shell: pwsh
         run: |
           $p = Start-Process .\FurZap.exe -ArgumentList '--self-test' -Wait -PassThru -RedirectStandardOutput logic-tests.txt -RedirectStandardError logic-errors.txt
+          Get-Content logic-tests.txt,logic-errors.txt
           if ($p.ExitCode -ne 0) { throw "Logic tests failed: $($p.ExitCode)" }
           $p = Start-Process .\FurZap.exe -ArgumentList '--preview --ui-regression --screenshots verification' -PassThru -RedirectStandardOutput ui-tests.txt -RedirectStandardError ui-errors.txt
           if (!$p.WaitForExit(180000)) { $p.Kill(); throw "UI regression timed out" }
+          Get-Content ui-tests.txt,ui-errors.txt
+          if (Test-Path verification/ui-regression.txt) { Get-Content verification/ui-regression.txt }
           if ($p.ExitCode -ne 0) { throw "UI tests failed: $($p.ExitCode)" }
       - uses: actions/upload-artifact@v4
         if: always()

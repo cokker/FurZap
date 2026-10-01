@@ -31,7 +31,7 @@ public partial class MainForm {
  }
  void CheckAppUpdate(){CheckAppUpdate(false);}
  async void CheckAppUpdate(bool automatic){
-  if(B.Preview||Busy||UpdatingApp)return;
+  if(B.Preview||Busy||UpdatingApp||EngineUpdating)return;
   if(!automatic&&PendingUpdate!=null){InstallPendingUpdate();return;}
   UpdatingApp=true;SetUpdateStatus("Проверяю обновления FurZap…");
   try{
@@ -83,3 +83,4 @@ public partial class MainForm {
  }
 }
 }
+

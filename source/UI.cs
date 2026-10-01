@@ -41,10 +41,10 @@ public partial class MainForm:Form {
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.3.2",27,75,170,22,9).ForeColor=Theme.Muted;
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.4.0",27,75,170,22,9).ForeColor=Theme.Muted;
   string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*44,178,38,()=>Navigate(n));}
   SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
-  var ver=L(Side,"ZAPRET ENGINE  1.10.3",26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
+  var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var container=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Bg};Controls.Add(container);container.BringToFront();
   var top=new Panel{Dock=DockStyle.Top,Height=80};container.Controls.Add(top);InitializeAppUpdates(top);Subtitle=L(top,"",31,24,720,35,21,true);var eyebrow=L(top,"DESKTOP / WINDOWS",31,59,400,17,8);eyebrow.ForeColor=Theme.Muted;
   Toast=L(container,"Готово. Выбери стратегию и запусти движок.",0,0,300,36,9);Toast.Dock=DockStyle.Bottom;Toast.Padding=new Padding(30,8,8,0);Toast.BackColor=Theme.Side;
@@ -80,7 +80,11 @@ public partial class MainForm:Form {
   HomeBase.Clear();BaseFonts.Clear();CaptureHome(HeroBox);CaptureHome(card);CaptureHome(info);CaptureHome(footer);var comfort=ComfortHome();CaptureHome(comfort);HomeLayout=()=>{Point homeScroll=Page.AutoScrollPosition;Page.AutoScrollPosition=Point.Empty;ResetHome();if(HeroBox==null||HeroBox.IsDisposed)return;int width=Math.Max(750,(int)(Page.Parent.ClientSize.Width/RenderZoom)-65);bool wide=width>=1160;if(wide){int left=(int)(width*.64),right=width-left-18;HeroBox.SetBounds(30,22,left,420);card.SetBounds(48+left,22,right,186);info.SetBounds(48+left,224,right,218);HeroBox.Pet.SetBounds(left-315,62,300,300);HeroBox.Controls[1].Top=340;HeroBox.Controls[2].Top=340;card.Controls[0].Width=right-44;card.Controls[1].SetBounds(23,52,right-46,38);card.Controls[2].SetBounds(22,97,right-44,38);card.Controls[3].SetBounds(23,144,right-46,36);info.Controls[0].Width=right-44;info.Controls[1].SetBounds(23,49,right-46,41);for(int i=2;i<5;i++)info.Controls[i].SetBounds(22,94+(i-2)*39,right-44,33);footer.Top=463;}else{HeroBox.SetBounds(30,22,width,282);HeroBox.Pet.SetBounds(width-319,5,300,264);HeroBox.Controls[1].Top=220;HeroBox.Controls[2].Top=220;card.SetBounds(30,322,width,139);card.Controls[0].Width=width-45;card.Controls[1].SetBounds(23,52,width-45,24);card.Controls[2].SetBounds(22,83,210,39);card.Controls[3].SetBounds(267,83,430,42);info.SetBounds(30,477,width,134);info.Controls[0].Width=width-45;info.Controls[1].SetBounds(23,52,width-45,24);for(int i=2;i<5;i++)info.Controls[i].SetBounds(22+(i-2)*206,82,195,36);footer.Top=627;}comfort.Top=wide?510:679;comfort.Width=width;ScaleHome(HeroBox,card,info,footer,comfort);HeroBox.Invalidate(true);card.Invalidate(true);info.Invalidate(true);Page.AutoScrollPosition=new Point(-homeScroll.X,-homeScroll.Y);};HomeLayout();RefreshState();
  }
  void RefreshState(){RefreshExtras();RefreshComfort();if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":B.Running?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):B.ServiceState()==4?"Запущена служба Windows":"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
- void Choose(string s){B.Pref["recent."+s]=DateTime.UtcNow.Ticks.ToString();if(Selected!=s)B.Checkpoint("Перед выбором стратегии");Selected=s;B.Pref["strategy"]=s;B.SavePrefs();Log("Выбрана стратегия: "+s+". Работающий движок не изменён.");if(StrategyList!=null){StrategyList.Applied=s;StrategyList.Invalidate();}if(AppliedLabel!=null)AppliedLabel.Text="✓ Выбрано: "+Path.GetFileNameWithoutExtension(s);Feedback("Стратегия выбрана",Path.GetFileNameWithoutExtension(s));}
+ void Choose(string s,bool start=false){
+  if(B.Preview){Selected=s;return;}
+  Work(()=>B.SelectStrategy(s,start),()=>{Selected=B.Get("strategy",s);if(StrategyList!=null){StrategyList.Applied=Selected;StrategyList.Invalidate();}if(AppliedLabel!=null)AppliedLabel.Text="✓ Выбрано: "+Path.GetFileNameWithoutExtension(Selected);});
+ }
+
  void Strategies(){
   L(Page,"Выбери маршрут для своего дракона",32,19,740,25,11).ForeColor=Theme.Muted;
   var search=Input(Page,"",32,58,ContentWidth-65);search.Anchor=AnchorStyles.Left|AnchorStyles.Top|AnchorStyles.Right;search.AccessibleName="Поиск стратегии";
@@ -88,11 +92,11 @@ public partial class MainForm:Form {
   var list=new FList{Bounds=new Rectangle(32,120,ContentWidth-65,280),FileNames=true,Applied=Selected,Anchor=AnchorStyles.Left|AnchorStyles.Top|AnchorStyles.Right};list.Caption=x=>(B.Get("favorite."+x)=="yes"?"★ ":"")+Path.GetFileNameWithoutExtension(x)+(B.Get("recent."+x).Length>0?" · недавно":"");Page.Controls.Add(list);StrategyList=list;
   Action fill=()=>{string focused=list.SelectedItem as string;list.SelectedIndex=-1;list.Items.Clear();foreach(var s in B.Strategies.OrderByDescending(x=>B.Get("favorite."+x)=="yes").ThenByDescending(x=>B.Get("recent."+x,"0").PadLeft(20,'0')).Where(x=>x.IndexOf(search.Text,StringComparison.OrdinalIgnoreCase)>=0))list.Items.Add(s);if(focused!=null&&list.Items.Contains(focused))list.SelectedItem=focused;else if(list.Items.Contains(Selected))list.SelectedItem=Selected;else if(list.Items.Count>0)list.SelectedIndex=0;list.Invalidate();};fill();search.TextChanged+=(s,e)=>fill();
   Btn(Page,"Выбрать",32,417,154,43,()=>{if(list.SelectedItem!=null)Choose(list.SelectedItem.ToString());},true);
-  Btn(Page,"Выбрать и запустить",197,417,235,43,()=>{if(list.SelectedItem==null)return;Choose(list.SelectedItem.ToString());Work(()=>{B.Stop();B.Start(Selected);});});
+  Btn(Page,"Выбрать и запустить",197,417,235,43,()=>{if(list.SelectedItem==null)return;Choose(list.SelectedItem.ToString(),true);});
   Btn(Page,"Параметры",444,417,164,43,()=>{if(list.SelectedItem!=null)TextDialog("Параметры winws",B.Arguments(list.SelectedItem.ToString()),false,null);});
   AppliedLabel=L(Page,"✓ Выбрано: "+Path.GetFileNameWithoutExtension(Selected),33,473,800,25,10,true);AppliedLabel.ForeColor=Theme.Mint;
   StrategyExtras(list,fill);
-  var note=Box(760,117);Title(note,"Одной универсальной стратегии нет","Результат зависит от провайдера и сети. Выбор сохраняется, но не меняет уже\nработающий процесс или службу. Для службы нажми «Применить» в её разделе.");
+  var note=Box(760,117);Title(note,"Одной универсальной стратегии нет","Результат зависит от провайдера и сети. Изменения сразу применяются к работающему\nпроцессу или службе. Остановленный движок остаётся остановленным.");
  }
  void Service(){var c=Box(22,265);Title(c,"Запуск вместе с Windows","Служба продолжает работать, когда окно FurZap закрыто. Не перемещай папку\nприложения после установки. Выбранная стратегия: "+Selected);
   string state=B.Preview?"Предпросмотр":B.ServiceState()==0?"Не установлена":B.ServiceState()==4?"Работает":"Остановлена / переходное состояние";L(c,"Состояние: "+state,23,107,700,28,12,true).ForeColor=Theme.Mint;
@@ -127,9 +131,9 @@ public partial class MainForm:Form {
   L(Page,"Перед каждым сохранением создаётся копия. После изменений перезапусти движок.",32,600,800,40,10).ForeColor=Theme.Muted;
  }
  void Tools(){
-  var d=Box(22,155);Title(d,"Проверить, что происходит","Файлы движка, службы, TCP, прокси и возможные конфликты. Результат появится в окне.");Btn(d,"Диагностика",23,97,209,40,()=>Work(()=>{string r=B.Diagnostics();UI(()=>TextDialog("Диагностика",r,false,null));}),true);Btn(d,"Подбор стратегий",244,97,215,40,()=>Navigate("Проверки"));Btn(d,"Результаты тестов",471,97,224,40,()=>{string p=B.P("utils/test results");Directory.CreateDirectory(p);Open(p);});
-  UpdateCard();
-  var u=Box(194,159);Title(u,"Актуальные списки","Обновления загружаются из репозитория Flowseal. Ошибка загрузки не заменит файл.");Btn(u,"Обновить IPSet",23,100,209,40,()=>Work(()=>B.UpdateIps()));Btn(u,"Обновление движка",244,100,215,40,()=>CheckVersion(true));Btn(u,"Hosts: просмотр",471,100,224,40,DownloadHosts);
+  var d=Box(22,155);Title(d,"Проверить, что происходит","Файлы движка, службы, TCP, прокси и возможные конфликты. Результат появится в окне.");Btn(d,"Диагностика",23,97,209,40,ShowDiagnostics,true);Btn(d,"Подбор стратегий",244,97,215,40,()=>Navigate("Проверки"));Btn(d,"Результаты тестов",471,97,224,40,()=>{string p=B.P("utils/test results");Directory.CreateDirectory(p);Open(p);});
+  UpdateCard();MaintenanceCard();
+  var u=Box(194,159);Title(u,"Актуальные списки","Обновления загружаются из репозитория Flowseal. Ошибка загрузки не заменит файл.");Btn(u,"Обновить IPSet",23,100,209,40,()=>Work(()=>B.UpdateIps()));Btn(u,"Обновление движка",244,100,215,40,UpdateEngine);Btn(u,"Hosts: просмотр",471,100,224,40,DownloadHosts);
   var t=Box(370,159);Title(t,"Обслуживание","Очистка кэша Discord и доступ к исходным инструментам сборки.");Btn(t,"Очистить кэш Discord",23,100,238,40,()=>{if(Confirm("Удалить только Cache, Code Cache и GPUCache Discord? Сначала закрой Discord."))Work(()=>B.ClearDiscord());});Btn(t,"Исходный менеджер",272,100,234,40,()=>{if(B.Preview)return;if(Confirm("Открыть оригинальный service.bat? Его действия могут изменять сетевые настройки и службы."))OpenProcess(Environment.GetEnvironmentVariable("ComSpec")??"cmd.exe","/d /s /c \"\""+B.P("service.bat")+"\" admin\"");});Btn(t,"Папка сборки",517,100,178,40,()=>Open(B.Root));
   var h=Box(546,143);Title(h,"Изменения hosts можно отменить","FurZap добавляет отдельный блок, сохраняя другие записи. Полная копия — в data/backups.");Btn(h,"Удалить блок FurZap",23,90,258,36,()=>{if(Confirm("Удалить из hosts только блок, добавленный FurZap?"))Work(()=>B.RemoveHosts());});
   L(Page,"Встроенный подбор с прогрессом и отменой находится в разделе «Проверки».\nПредыдущая конфигурация возвращается после завершения тестов.",33,706,800,50,10).ForeColor=Theme.Muted;
@@ -143,7 +147,7 @@ public partial class MainForm:Form {
  }
  public void Log(string value){if(IsDisposed)return;UI(()=>{string line="["+DateTime.Now.ToString("HH:mm:ss")+"] "+value+"\r\n";Journal.Append(line);if(Journal.Length>150000)Journal.Remove(0,50000);try{File.AppendAllText(CurrentLog,line,new UTF8Encoding(false));}catch{}if(LogView!=null&&!LogView.IsDisposed){LogView.Text=Journal.ToString();LogView.SelectionStart=LogView.TextLength;LogView.ScrollToCaret();}Toast.Text=value.Split(new char[] {'\n'})[0].Trim();});}
  void UI(Action a){if(IsDisposed||Disposing)return;if(InvokeRequired)BeginInvoke(a);else a();}
- async void Work(Action action,Action done=null){if(Busy)return;if(ExternalTool!=null&&!ExternalTool.HasExited){MessageBox.Show(this,"Дождись завершения тестов или закрой исходный менеджер, чтобы действия не пересекались.","FurZap");return;}if(B.Preview){Log("Предпросмотр: действие не выполняется.");return;}Busy=true;Page.Enabled=false;UseWaitCursor=true;var busyButton=ActionButton;string busyText=busyButton==null?null:busyButton.Text;if(busyButton!=null&&!busyButton.IsDisposed)busyButton.Text="Выполняю…";Toast.Text="Выполняю…";try{await Task.Run(action);Busy=false;if(done!=null)done();Feedback("Готово","Действие выполнено.");}catch(Exception ex){Error(ex);}finally{Busy=false;Page.Enabled=true;UseWaitCursor=false;if(busyButton!=null&&!busyButton.IsDisposed)busyButton.Text=busyText;InvalidateChecks();RefreshState();}}
+ async void Work(Action action,Action done=null){if(Busy||UpdatingApp||EngineUpdating)return;if(ExternalTool!=null&&!ExternalTool.HasExited){MessageBox.Show(this,"Дождись завершения тестов или закрой исходный менеджер, чтобы действия не пересекались.","FurZap");return;}if(B.Preview){Log("Предпросмотр: действие не выполняется.");return;}Busy=true;Page.Enabled=false;UseWaitCursor=true;var busyButton=ActionButton;string busyText=busyButton==null?null:busyButton.Text;if(busyButton!=null&&!busyButton.IsDisposed)busyButton.Text="Выполняю…";Toast.Text="Выполняю…";try{await Task.Run(action);Busy=false;if(done!=null)done();Feedback("Готово","Действие выполнено.");}catch(Exception ex){Error(ex);}finally{Busy=false;Page.Enabled=true;UseWaitCursor=false;if(busyButton!=null&&!busyButton.IsDisposed)busyButton.Text=busyText;InvalidateChecks();RefreshState();}}
  void Error(Exception ex){LastException=ex.ToString();Log("Ошибка: "+ex.ToString());Feedback("Не получилось",ex.Message,true);MessageBox.Show(this,Backend.FriendlyError(ex),"FurZap — не получилось",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
  bool Confirm(string s){return MessageBox.Show(this,s,"FurZap",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes;}
  void Open(string path){if(B.Preview)return;Process.Start(new ProcessStartInfo(path){UseShellExecute=true,WorkingDirectory=B.Root});}
@@ -161,6 +165,7 @@ public static class Program {
  [STAThread] public static int Main(string[] args){
   if(args.Contains("--install-update"))return AppUpdater.Install(args);
   bool preview=args.Contains("--preview");string root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"engine");
+  if(args.Contains("--engine-package-test")){try{var b=new Backend(root,false);var r=EngineUpdater.Latest(b);string path=EngineUpdater.Download(b,r,System.Threading.CancellationToken.None,p=>{});EngineUpdater.Validate(path);Console.WriteLine("PASS: official engine ZIP downloaded, verified, extracted and all strategies parsed: "+r.Version);return 0;}catch(Exception ex){Console.Error.WriteLine(ex);return 1;}}
   if(args.Contains("--self-test")){try{Tests.Run(root);return 0;}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
   Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
   try{
@@ -180,3 +185,4 @@ public static class Program {
  }
 }
 }
+

@@ -35,8 +35,9 @@ public static class Tests {
    Check(ListDocument.Changed("a\nb\n","a\nb"),"actual trailing newline edit detected");
    var blend=new PoseBlend();blend.Set(1,10,false);blend.Update(10.12,false);Check(blend.Weights[0]>.4f&&blend.Weights[1]>.4f,"dragon transition blends both poses midway");
    float oldWeight=blend.Weights[1];blend.Set(2,10.12,false);Check(Math.Abs(blend.Weights[1]-oldWeight)<.001,"interrupted pose transition remains continuous");blend.Update(11,false);Check(blend.Weights[2]==1&&blend.Weights[0]==0&&blend.Weights[1]==0,"dragon blend reaches target");blend.Set(0,11,true);Check(blend.Weights[0]==1,"reduced motion changes pose immediately");
-   ScanTests.Run(copy,Check);ComfortTests.Run(Check,Reject);
+   ScanTests.Run(copy,Check);ComfortTests.Run(Check,Reject);ApplyTests.Run(copy,Check,Reject);
    Console.WriteLine("ALL "+count+" CHECKS PASSED");
   }finally{if(Directory.Exists(temp))Directory.Delete(temp,true);}
  }
 }}
+

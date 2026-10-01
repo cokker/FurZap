@@ -2,6 +2,7 @@ name: Windows build, UI regression and release
 on:
   push:
     branches: [main]
+    paths-ignore: ['README.md', 'README.txt']
   workflow_dispatch:
 permissions:
   contents: write
@@ -16,7 +17,7 @@ jobs:
         run: |
           $compiler = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
           Push-Location source
-          & $compiler /nologo /codepage:65001 /resource:..\assets\dragon.png,FurZap.Dragon.png /resource:..\assets\dragon-happy.png,FurZap.DragonHappy.png /resource:..\assets\dragon-sleep.png,FurZap.DragonSleep.png /target:winexe /platform:x64 /optimize+ /win32manifest:app.manifest /win32icon:..\furzap.ico /out:..\FurZap.exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.ServiceProcess.dll /reference:System.Core.dll *.cs
+          & $compiler /nologo /codepage:65001 /resource:..\assets\dragon.png,FurZap.Dragon.png /resource:..\assets\dragon-happy.png,FurZap.DragonHappy.png /resource:..\assets\dragon-sleep.png,FurZap.DragonSleep.png /target:winexe /platform:x64 /optimize+ /win32manifest:app.manifest /win32icon:..\furzap.ico /out:..\FurZap.exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.ServiceProcess.dll /reference:System.Core.dll /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll *.cs
           if ($LASTEXITCODE -ne 0) { throw "Compilation failed" }
           Pop-Location
       - name: Run logic and Windows UI regressions
@@ -38,6 +39,12 @@ jobs:
             *-tests.txt
             *-errors.txt
             verification/
+      - name: Verify upstream engine download and archive
+        shell: pwsh
+        run: |
+          $p = Start-Process .\FurZap.exe -ArgumentList '--engine-package-test' -Wait -PassThru -RedirectStandardOutput engine-tests.txt -RedirectStandardError engine-errors.txt
+          Get-Content engine-tests.txt,engine-errors.txt
+          if ($p.ExitCode -ne 0) { throw "Engine package check failed" }
       - name: Package full distribution and publish
         shell: pwsh
         env:
@@ -52,3 +59,4 @@ jobs:
           if ($LASTEXITCODE -eq 0) { throw "Release already exists; refusing to replace it" }
           gh release create $tag FurZap.exe FurZap-Windows-x64.zip --target "${{ github.sha }}" --title "FurZap $tag" --notes-file RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { throw "Release failed" }
+

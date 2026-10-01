@@ -25,6 +25,9 @@ public partial class MainForm {
     }
    }
   }
+  Navigate("Настройки");Page.AutoScrollPosition=Point.Empty;
+  var rail=Page.Parent.Controls.OfType<ScrollRail>().First();int repaint=0;rail.Invalidated+=(s,e)=>repaint++;
+  using(var router=new PageWheelRouter(Page)){router.Route(Page,-120,new IntPtr(unchecked(-120<<16)),IntPtr.Zero);check(repaint>0&&rail.ThumbFraction>0,"wheel repaints right scroll rail and moves thumb");}
   WindowState=FormWindowState.Normal;Navigate("Стратегии");Page.AutoScrollPosition=Point.Empty;
   using(var router=new PageWheelRouter(Page)){
    StrategyList.SelectedIndex=0;router.Route(StrategyList,-120,new IntPtr(unchecked(-120<<16)),IntPtr.Zero);
@@ -42,3 +45,4 @@ public partial class MainForm {
  }
 }
 }
+

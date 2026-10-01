@@ -106,8 +106,11 @@ public class FToggle:Control {
  protected override void Dispose(bool disposing){if(disposing)Motion.Frame-=Animate;base.Dispose(disposing);}
 }
 public class ScrollRail:Control {
- Panel page;bool drag;public ScrollRail(Panel p){page=p;SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);BackColor=Theme.Bg;Cursor=Cursors.Hand;page.Scroll+=(s,e)=>Invalidate();page.Layout+=(s,e)=>Invalidate();page.Resize+=(s,e)=>Invalidate();}
+ Panel page;bool drag;public ScrollRail(Panel p){page=p;SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);BackColor=Theme.Bg;Cursor=Cursors.Hand;page.Scroll+=(s,e)=>Invalidate();page.Layout+=(s,e)=>Invalidate();page.Resize+=(s,e)=>Invalidate();page.Invalidated+=PageInvalidated;}
  protected override void OnPaint(PaintEventArgs e){int full=page.DisplayRectangle.Height,view=page.ClientSize.Height;if(full<=view)return;float h=Math.Max(32,Height*view/(float)full),y=(Height-h)*(-page.AutoScrollPosition.Y)/(float)Math.Max(1,full-view);e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var p=Theme.Round(new RectangleF(3,y,5,h),5))using(var b=new SolidBrush(Color.FromArgb(83,91,112)))e.Graphics.FillPath(b,p);}
+ void PageInvalidated(object sender,InvalidateEventArgs e){Invalidate();}
+ protected override void Dispose(bool disposing){if(disposing)page.Invalidated-=PageInvalidated;base.Dispose(disposing);}
+ internal float ThumbFraction{get{return Math.Max(0,Math.Min(1,-page.AutoScrollPosition.Y/(float)Math.Max(1,page.DisplayRectangle.Height-page.ClientSize.Height)));}}
  void MoveTo(int y){int full=page.DisplayRectangle.Height,view=page.ClientSize.Height;page.AutoScrollPosition=new Point(0,Math.Max(0,(int)((y/(float)Math.Max(1,Height))*(full-view))));Invalidate();}
  protected override void OnMouseDown(MouseEventArgs e){drag=true;Capture=true;MoveTo(e.Y);base.OnMouseDown(e);}protected override void OnMouseMove(MouseEventArgs e){if(drag)MoveTo(e.Y);base.OnMouseMove(e);}protected override void OnMouseUp(MouseEventArgs e){drag=false;Capture=false;base.OnMouseUp(e);}
 }
@@ -117,3 +120,4 @@ public class FeedbackCard:Control {
  protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;Color color=Failure?Color.FromArgb(255,143,135):Theme.Mint;using(var p=Theme.Round(new RectangleF(1,1,Width-3,Height-3),20)){using(var b=new SolidBrush(Color.FromArgb(30,37,45)))g.FillPath(b,p);using(var pen=new Pen(color))g.DrawPath(pen,p);}Theme.Txt(g,Failure?"!":"✓",17,20,23,color,true);Theme.Txt(g,Heading,58,12,11,color,true);TextRenderer.DrawText(g,Message,Theme.F(9),new Rectangle(59,37,Width-76,29),Theme.Text,TextFormatFlags.EndEllipsis|TextFormatFlags.VerticalCenter);}
 }
 }
+

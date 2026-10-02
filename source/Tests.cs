@@ -45,7 +45,7 @@ public static class Tests {
    b.SaveList("list-general-user.txt","another.example\n");b.Pref["theme"]="cyan";b.SavePrefs();
    SettingsArchive.Import(b,settingsZip);Check(File.ReadAllText(b.P("lists/list-general-user.txt"))==savedList&&b.Get("theme")=="","settings import restores list and preferences");
    Check(b.Profiles().Contains("VRChat"),"settings import restores profiles");
-   string unsafeZip=Path.Combine(temp,"unsafe.zip");using(var zip=ZipFile.Open(unsafeZip,ZipArchiveMode.Create)){var entry=zip.CreateEntry("../outside.txt");using(var w=new StreamWriter(entry.Open()))w.Write("unsafe");}
+   string unsafeZip=Path.Combine(temp,"settings-unsafe.zip");using(var zip=ZipFile.Open(unsafeZip,ZipArchiveMode.Create)){var entry=zip.CreateEntry("../outside.txt");using(var w=new StreamWriter(entry.Open()))w.Write("unsafe");}
    Reject(()=>SettingsArchive.Import(b,unsafeZip),"settings import rejects ZIP traversal");
    foreach(string name in new[]{"../escape","CON","test/path","","a.b","LPT1"})Reject(()=>Backend.ProfileName(name),"invalid profile name: "+name);
    string snapshot=Path.Combine(b.Data,"profiles","VRChat");string before=File.ReadAllText(b.P("lists/list-general-user.txt"));b.SaveList("list-general-user.txt","changed.example\n");b.RestoreFiles(snapshot);Check(File.ReadAllText(b.P("lists/list-general-user.txt"))==before,"snapshot restores exact list bytes");

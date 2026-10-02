@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
+using System.Threading;
 namespace FurZap {
 public static class Tests {
  static int count;
@@ -11,6 +13,16 @@ public static class Tests {
   try{foreach(string f in Directory.GetFiles(root,"*",SearchOption.AllDirectories)){string target=Path.Combine(copy,f.Substring(root.Length).TrimStart(new char[] {Path.DirectorySeparatorChar}));Directory.CreateDirectory(Path.GetDirectoryName(target));File.Copy(f,target);}
    var b=new Backend(copy,true);Check(b.Strategies.Length>=20,"all supplied strategies discovered");
    Check(TelegramProxyUpdater.HasEmbedded,"official TG WS Proxy is embedded in FurZap.exe");string embedded=TelegramProxyUpdater.ExtractEmbedded(temp);Check(new FileInfo(embedded).Length==21330255&&AppUpdater.FileHash(embedded)=="b51436e8960307316135e64ac14753b1f3b0e7a46afe1bd6081353b82de20f09","embedded proxy extracts with verified official bytes");
+   string fixture=Path.Combine(b.Data,"tools","TgWsProxy_windows.exe");Directory.CreateDirectory(Path.GetDirectoryName(fixture));File.Copy(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"ping.exe"),fixture,true);
+   Process fixtureProcess=null;
+   try{
+    fixtureProcess=Process.Start(new ProcessStartInfo(fixture,"-n 30 127.0.0.1"){UseShellExecute=false,CreateNoWindow=true});
+    Thread.Sleep(350);
+    var reopened=new TelegramProxyManager(new Backend(copy,false));
+    Check(reopened.Running,"reopened FurZap rediscovers a proxy process in its tools directory");
+    reopened.Stop();
+    Check(!reopened.Running&&fixtureProcess.WaitForExit(1000),"Stop closes a previously launched proxy process");
+   }finally{if(fixtureProcess!=null){if(!fixtureProcess.HasExited)fixtureProcess.Kill();fixtureProcess.Dispose();}File.Delete(fixture);}
    foreach(string strategy in b.Strategies){string a=b.Arguments(strategy);Check(a.StartsWith("--wf-tcp=")&&!a.Contains("%")&&!a.Contains("^")&&!a.Contains("\n"),"parse "+strategy);Check(a.Contains("--new")&&a.Contains("--filter-"),"profiles retained: "+strategy);}
    Check(Backend.Ports("443, 1024-65535")=="443,1024-65535","port list normalization");foreach(string v in new[]{"0","65536","443-80","1&calc","-1","01","1,","","1-2-3"})Reject(()=>Backend.Ports(v),"invalid ports: "+v);
    Check(Backend.ValidIp("203.0.113.0/24")&&Backend.ValidIp("2001:db8::/32"),"valid IPv4 and IPv6 networks");foreach(string v in new[]{"999.1.2.3","1.2.3.4/33","1.2.3.4/-1","127.1","2001:db8::/129"})Check(!Backend.ValidIp(v),"invalid IP: "+v);

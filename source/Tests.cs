@@ -14,6 +14,8 @@ public static class Tests {
    Check(Backend.Ports("443, 1024-65535")=="443,1024-65535","port list normalization");foreach(string v in new[]{"0","65536","443-80","1&calc","-1","01","1,","","1-2-3"})Reject(()=>Backend.Ports(v),"invalid ports: "+v);
    Check(Backend.ValidIp("203.0.113.0/24")&&Backend.ValidIp("2001:db8::/32"),"valid IPv4 and IPv6 networks");foreach(string v in new[]{"999.1.2.3","1.2.3.4/33","1.2.3.4/-1","127.1","2001:db8::/129"})Check(!Backend.ValidIp(v),"invalid IP: "+v);
    Reject(()=>Backend.ValidateList("list-general-user.txt","https://discord.com/a"),"reject URL in domains");Reject(()=>Backend.ValidateList("ipset-all.txt","<html>error</html>"),"reject HTML update");
+   Backend.ValidateList("list-general.txt","^dns.google\napi.epicgames.dev\n");Check(true,"official Flowseal caret domain and custom Epic Games domain accepted");
+   try{Backend.ValidateList("list-general.txt","^dns.google\nhttps://bad.example/a\n");throw new Exception("Missing validation error");}catch(Exception ex){Check(ex.Message.Contains("строка 2")&&ex.Message.Contains("https://bad.example/a"),"list validation names exact invalid line");}
    string initial=File.ReadAllText(b.P("lists/ipset-all.txt"));b.Settings("tcp","443,8080","50000-50100","none",false);string args=b.Arguments("general.bat");Check(args.Contains("--filter-tcp=443,8080 ")&&args.Contains("--filter-udp=12 "),"TCP-only mode substitution");
    b.Settings("udp","1024-65535","50000-50100","any",true);args=b.Arguments("general.bat");Check(args.Contains("--filter-tcp=12 ")&&args.Contains("--filter-udp=50000-50100 "),"UDP-only mode substitution");Check(b.IpMode()=="any","any IP mode");
    b.Settings("all","1000-2000","3000-4000","loaded",true);Check(b.IpMode()=="loaded"&&new FileInfo(b.P("lists/ipset-all.txt")).Length>1000,"restore loaded IP list");
@@ -40,4 +42,3 @@ public static class Tests {
   }finally{if(Directory.Exists(temp))Directory.Delete(temp,true);}
  }
 }}
-

@@ -24,6 +24,7 @@ public static class ApplyTests {
   var b=new ApplyTestBackend(root);string strategy=b.Strategies[0];b.Pref["strategy"]=strategy;b.ActiveStrategy=strategy;b.Live=true;
   b.Settings("all","444","555","any",true);check(b.Live&&b.Starts==1&&b.Game()["tcp"]=="444","saving settings restarts live process with new ports");
   b.SaveList("list-general-user.txt","first.example\n");check(b.Starts==2&&b.Live,"saving lists restarts live process");
+  int unchangedStarts=b.Starts;reject(()=>b.SaveList("list-general.txt","^dns.google\nhttps://bad.example/a\n"),"bad domain is rejected before stopping active engine");check(b.Live&&b.Starts==unchangedStarts,"validation failure leaves active process running");
   b.ReplaceFake("ACTIVE_DISCORD_UDP.bin","stun.bin");check(b.Starts==3,"packet changes restart process");
   string original=File.ReadAllText(b.P("lists/list-general-user.txt"));b.FailNext=true;reject(()=>b.SaveList("list-general-user.txt","bad.example\n"),"failed process restart reports rollback");check(b.Live&&File.ReadAllText(b.P("lists/list-general-user.txt"))==original,"process rollback restores exact previous file and running state");
   b.FailNext=true;reject(()=>b.SelectStrategy(b.Strategies[1]),"failed strategy switch rolls back");check(b.Get("strategy")==strategy&&b.ActiveStrategy==strategy&&b.Live,"strategy preference and active strategy restored");

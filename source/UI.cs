@@ -31,17 +31,17 @@ public class Hero:Card {
  }
 }
 public partial class MainForm:Form {
- Backend B;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
+ Backend B;TelegramProxyManager TgProxy;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
  Action HomeLayout=delegate{};Action ViewLayout=delegate{};FeedbackCard Notice;double repaintAfter=Motion.Now+.12;double noticeUntil;FButton ActionButton;FList StrategyList;Label AppliedLabel;
  string Selected;bool Busy,AllowExit;RichTextBox ListEditor;string ListBaseline="";bool Dirty{get{return ListEditor!=null&&!ListEditor.IsDisposed&&!ListEditor.Disposing&&ListDocument.Changed(ListBaseline,ListEditor.Text);}}RichTextBox LogView;StringBuilder Journal=new StringBuilder();string CurrentLog;
  [DllImport("dwmapi.dll")]static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
  protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);if(Environment.OSVersion.Platform==PlatformID.Win32NT){try{int on=1;DwmSetWindowAttribute(Handle,20,ref on,4);}catch{}}}
- public MainForm(Backend b){B=b;Theme.Orange=AccentColor(B.Get("theme","orange"));B.Log=Log;Text="FurZap · уютная сторона интернета";Size=new Size(1190,820);MinimumSize=new Size(1050,740);StartPosition=FormStartPosition.CenterScreen;BackColor=Theme.Bg;ForeColor=Theme.Text;Font=Theme.F();AutoScaleMode=AutoScaleMode.Dpi;
+ public MainForm(Backend b){B=b;TgProxy=new TelegramProxyManager(b);Theme.Orange=AccentColor(B.Get("theme","orange"));B.Log=Log;Text="FurZap · уютная сторона интернета";Size=new Size(1190,820);MinimumSize=new Size(1050,740);StartPosition=FormStartPosition.CenterScreen;BackColor=Theme.Bg;ForeColor=Theme.Text;Font=Theme.F();AutoScaleMode=AutoScaleMode.Dpi;
   string icon=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"furzap.ico");if(File.Exists(icon))Icon=new Icon(icon,32,32);
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.4.0",27,75,170,22,9).ForeColor=Theme.Muted;
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.4.1",27,75,170,22,9).ForeColor=Theme.Muted;
   string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*44,178,38,()=>Navigate(n));}
   SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
@@ -123,12 +123,12 @@ public partial class MainForm:Form {
   string[] files={"list-general-user.txt","list-exclude-user.txt","ipset-exclude-user.txt","list-general.txt","list-exclude.txt","list-google.txt","ipset-all.txt","ipset-exclude.txt"};
   L(Page,"Свои домены и исключения — по одной записи на строку.",32,20,760,30,11).ForeColor=Theme.Muted;
   var combo=Combo(Page,files,32,61,440);var edit=new RoundedTextBox{Bounds=new Rectangle(32,153,ContentWidth-65,365),Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top,BackColor=Theme.Card,ForeColor=Theme.Text,BorderStyle=BorderStyle.None,Font=new Font("Consolas",11),AcceptsTab=true,WordWrap=false,DetectUrls=false};Page.Controls.Add(edit);ListEditor=edit;
-  L(Page,"Пользовательские списки сохраняют твои добавления отдельно от штатных.\nДомены — без https://; IP — с необязательной маской, например 192.0.2.0/24.",32,104,800,44,10).ForeColor=Theme.Muted;
+  L(Page,"Пользовательские списки сохраняют твои добавления отдельно от штатных.\nДомены — без https:// (знак ^ допустим); IP — с маской, например 192.0.2.0/24.",32,104,800,44,10).ForeColor=Theme.Muted;
   string loaded="";bool loading=false;
   Action load=()=>{loading=true;loaded=combo.Text;string path=B.P("lists/"+loaded);edit.Text=File.Exists(path)?File.ReadAllText(path):loaded.StartsWith("ipset")?"203.0.113.113/32\r\n":"domain.example.abc\r\n";ListBaseline=ListDocument.Normalize(edit.Text);loading=false;};
   combo.SelectedIndexChanged+=(s,e)=>{if(loading)return;if(Dirty&&!Confirm("Отбросить несохранённые изменения списка?")){loading=true;combo.SelectedItem=loaded;loading=false;return;}load();};load();
-  Btn(Page,"Сохранить список",32,537,219,43,()=>{string name=loaded,content=edit.Text;Work(()=>B.SaveList(name,content),()=>ListBaseline=ListDocument.Normalize(content));},true);Btn(Page,"Резервные копии",263,537,213,43,()=>{Directory.CreateDirectory(Path.Combine(B.Data,"backups"));Open(Path.Combine(B.Data,"backups"));});
-  L(Page,"Перед каждым сохранением создаётся копия. После изменений перезапусти движок.",32,600,800,40,10).ForeColor=Theme.Muted;
+  Btn(Page,"Сохранить список",32,537,219,43,()=>{string name=loaded,content=edit.Text;try{Backend.ValidateList(name,content);}catch(Exception ex){var m=System.Text.RegularExpressions.Regex.Match(ex.Message,@"строка (\d+):");int line;if(m.Success&&Int32.TryParse(m.Groups[1].Value,out line)){int start=edit.GetFirstCharIndexFromLine(line-1);if(start>=0){edit.Select(start,Math.Max(0,edit.Lines[line-1].Length));edit.ScrollToCaret();edit.Focus();}}throw;}Work(()=>B.SaveList(name,content),()=>ListBaseline=ListDocument.Normalize(content));},true);Btn(Page,"Резервные копии",263,537,213,43,()=>{Directory.CreateDirectory(Path.Combine(B.Data,"backups"));Open(Path.Combine(B.Data,"backups"));});
+  L(Page,"Перед каждым сохранением создаётся копия. Активный движок перезапускается автоматически.",32,600,800,40,10).ForeColor=Theme.Muted;
  }
  void Tools(){
   var d=Box(22,155);Title(d,"Проверить, что происходит","Файлы движка, службы, TCP, прокси и возможные конфликты. Результат появится в окне.");Btn(d,"Диагностика",23,97,209,40,ShowDiagnostics,true);Btn(d,"Подбор стратегий",244,97,215,40,()=>Navigate("Проверки"));Btn(d,"Результаты тестов",471,97,224,40,()=>{string p=B.P("utils/test results");Directory.CreateDirectory(p);Open(p);});
@@ -137,6 +137,7 @@ public partial class MainForm:Form {
   var t=Box(370,159);Title(t,"Обслуживание","Очистка кэша Discord и доступ к исходным инструментам сборки.");Btn(t,"Очистить кэш Discord",23,100,238,40,()=>{if(Confirm("Удалить только Cache, Code Cache и GPUCache Discord? Сначала закрой Discord."))Work(()=>B.ClearDiscord());});Btn(t,"Исходный менеджер",272,100,234,40,()=>{if(B.Preview)return;if(Confirm("Открыть оригинальный service.bat? Его действия могут изменять сетевые настройки и службы."))OpenProcess(Environment.GetEnvironmentVariable("ComSpec")??"cmd.exe","/d /s /c \"\""+B.P("service.bat")+"\" admin\"");});Btn(t,"Папка сборки",517,100,178,40,()=>Open(B.Root));
   var h=Box(546,143);Title(h,"Изменения hosts можно отменить","FurZap добавляет отдельный блок, сохраняя другие записи. Полная копия — в data/backups.");Btn(h,"Удалить блок FurZap",23,90,258,36,()=>{if(Confirm("Удалить из hosts только блок, добавленный FurZap?"))Work(()=>B.RemoveHosts());});
   L(Page,"Встроенный подбор с прогрессом и отменой находится в разделе «Проверки».\nПредыдущая конфигурация возвращается после завершения тестов.",33,706,800,50,10).ForeColor=Theme.Muted;
+  TelegramProxyCard();
  }
  void RunTests(){if(B.Preview)return;if(ExternalTool!=null&&!ExternalTool.HasExited){MessageBox.Show(this,"Исходный инструмент уже открыт.");return;}if(B.Running||B.ServiceState()!=0){MessageBox.Show(this,"Сначала останови процесс и удали службу со страницы Служба. После тестов её можно установить снова.","Тесты стратегий");return;}if(!Confirm("Открыть исходные интерактивные тесты? Они запускают стратегии и проверяют сеть; не закрывай окно до завершения."))return;OpenProcess("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Backend.Quote(B.P("utils/test zapret.ps1")));Log("Открыты исходные тесты. Их результат не считается известным до завершения.");}
  void DownloadHosts(){Work(()=>{string s=B.Download("https://raw.githubusercontent.com/Flowseal/zapret-discord-youtube/refs/heads/main/.service/hosts");UI(()=>TextDialog("Hosts — проверь записи перед применением",s,true,value=>{if(Confirm("Добавить эти записи в системный hosts? Существующие записи сохранятся, будет сделана резервная копия."))Work(()=>B.ApplyHosts(value));}));});}
@@ -185,4 +186,3 @@ public static class Program {
  }
 }
 }
-

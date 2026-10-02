@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Threading;
 using System.Reflection;
 
@@ -56,24 +57,60 @@ public static class TelegramProxyUpdater {
  }
 }
 public sealed class TelegramProxyManager {
- readonly Backend backend;Process owned;
+ readonly Backend backend;
  public TelegramProxyManager(Backend b){backend=b;}
  public string Bundled{get{return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tools","TgWsProxy_windows.exe");}}
  public string Installed{get{return Path.Combine(backend.Data,"tools","TgWsProxy_windows.exe");}}
  public string Executable{get{return File.Exists(Installed)?Installed:File.Exists(Bundled)?Bundled:null;}}
  public bool Available{get{return Executable!=null||TelegramProxyUpdater.HasEmbedded;}}
- public bool Running{get{try{return owned!=null&&!owned.HasExited;}catch{return false;}}}
+ internal static bool ManagedPath(string actual,string installed,string bundled){
+  if(String.IsNullOrEmpty(actual))return false;
+  string path=Path.GetFullPath(actual);
+  return String.Equals(path,Path.GetFullPath(installed),StringComparison.OrdinalIgnoreCase)||String.Equals(path,Path.GetFullPath(bundled),StringComparison.OrdinalIgnoreCase);
+ }
+ Process[] ProxyProcesses(bool managedOnly){
+  var found=new List<Process>();
+  foreach(var process in Process.GetProcesses()){
+   bool keep=false;
+   try{
+    if(process.ProcessName.StartsWith("TgWsProxy",StringComparison.OrdinalIgnoreCase)){
+     if(!managedOnly)keep=true;
+     else{var module=process.MainModule;keep=module!=null&&ManagedPath(module.FileName,Installed,Bundled);}
+    }
+   }catch(Win32Exception){}catch(InvalidOperationException){}
+   if(keep)found.Add(process);else process.Dispose();
+  }
+  return found.ToArray();
+ }
+ public bool Running{get{var processes=ProxyProcesses(true);foreach(var process in processes)process.Dispose();return processes.Length>0;}}
  public void Start(){
   if(backend.Preview)throw new Exception("Запуск доступен только в Windows.");
-  if(Running)throw new Exception("TG WS Proxy уже запущен из FurZap.");
-  if(Process.GetProcessesByName("TgWsProxy_windows").Length>0)throw new Exception("TG WS Proxy уже работает. Найди его значок в системном трее.");
+  if(Running)throw new Exception("TG WS Proxy уже запущен из папки FurZap.");
+  var existing=ProxyProcesses(false);foreach(var process in existing)process.Dispose();
+  if(existing.Length>0)throw new Exception("TG WS Proxy уже работает из другой папки. Заверши его через значок в системном трее.");
   string file=Executable??TelegramProxyUpdater.ExtractEmbedded(backend.Data);
-  owned=Process.Start(new ProcessStartInfo(file){UseShellExecute=true,WorkingDirectory=Path.GetDirectoryName(file)});
-  if(owned==null)throw new Exception("Windows не запустила TG WS Proxy.");
-  System.Threading.Thread.Sleep(800);if(!Running)throw new Exception("TG WS Proxy завершился сразу после запуска. Проверь его журнал в трее или папке программы.");
+  using(var started=Process.Start(new ProcessStartInfo(file){UseShellExecute=true,WorkingDirectory=Path.GetDirectoryName(file)}))
+   if(started==null)throw new Exception("Windows не запустила TG WS Proxy.");
+  Thread.Sleep(800);if(!Running)throw new Exception("TG WS Proxy завершился сразу после запуска. Проверь его журнал в трее или папке программы.");
  }
- public void Stop(){if(!Running)throw new Exception("TG WS Proxy не запущен из этого окна FurZap. Если он открыт отдельно, заверши его через собственный трей.");
-  if(!owned.CloseMainWindow()||!owned.WaitForExit(2000)){owned.Kill();if(!owned.WaitForExit(5000))throw new Exception("Не удалось остановить TG WS Proxy.");}owned.Dispose();owned=null;
+ public void Stop(){
+  if(backend.Preview)throw new Exception("Остановка доступна только в Windows.");
+  bool found=false;
+  for(int attempt=0;attempt<3;attempt++){
+   var processes=ProxyProcesses(true);
+   if(processes.Length==0){if(!found)throw new Exception("TG WS Proxy из папки FurZap не запущен.");return;}
+   found=true;
+   try{foreach(var process in processes)try{
+     if(process.HasExited)continue;
+     if(!process.CloseMainWindow()||!process.WaitForExit(1500)){
+      process.Kill();if(!process.WaitForExit(5000))throw new Exception("TG WS Proxy не завершился после команды остановки.");
+     }
+    }catch(InvalidOperationException){/* Процесс завершился сам. */}
+     catch(Win32Exception ex){throw new Exception("Не удалось остановить TG WS Proxy. Запусти FurZap с теми же правами, что и прокси, либо заверши прокси через его трей.",ex);}
+   }finally{foreach(var process in processes)process.Dispose();}
+   Thread.Sleep(200);
+  }
+  if(Running)throw new Exception("TG WS Proxy продолжает работать. Заверши его через значок в системном трее.");
  }
  public void InstallLatest(CancellationToken token,Action<int> progress){if(Running)throw new Exception("Сначала закрой TG WS Proxy через его значок в трее, затем обнови.");var release=TelegramProxyUpdater.Latest(backend);TelegramProxyUpdater.Download(backend,release,token,progress);}
 }

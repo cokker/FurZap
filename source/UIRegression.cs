@@ -24,7 +24,15 @@ public partial class MainForm {
   Navigate("Списки");check(!Dirty,"list is clean after navigation and layout");var edit=ListEditor;string original=edit.Text;edit.Font=new Font("Consolas",14);edit.SelectAll();edit.SelectionColor=Color.White;edit.Select(0,0);RenderPageScale();check(!Dirty,"font/format/scale do not dirty the list");
   edit.Focus();edit.SelectionStart=edit.TextLength;edit.SelectedText="\nnew.example";check(Dirty,"typing creates unsaved changes");edit.Undo();check(!Dirty,"undo returns to saved state");
   edit.Text=original+"\nchanged.example";check(Dirty,"programmatic content difference detected");edit.Text=original;check(!Dirty,"restoring exact text clears dirty state");
-  Navigate("Главная");check(Subtitle.Text=="Главная","can leave unchanged list without a prompt");check(HomeProxyButton!=null&&HomeProxyButton.Text=="Запустить TG WS Proxy","home has one-click Telegram proxy launch");Navigate("Списки");var combo=Page.Controls.OfType<FCombo>().First();combo.SelectedIndex=3;check(!Dirty,"switching loaded files does not dirty editor");Navigate("Настройки");
+  Navigate("Главная");check(Subtitle.Text=="Главная","can leave unchanged list without a prompt");VerifyHomeActions(check);Navigate("Списки");var combo=Page.Controls.OfType<FCombo>().First();combo.SelectedIndex=3;check(!Dirty,"switching loaded files does not dirty editor");Navigate("Настройки");
+ }
+ internal void VerifyHomeActions(Action<bool,string> check){
+  check(Nav.All(n=>n.NavIcon.Length>0)&&Nav.Select(n=>n.NavIcon).Distinct().Count()==Nav.Length,"every navigation section has a separate icon");
+  check(HomeProxyStart!=null&&HomeProxyStop!=null&&HomeProxyStart.Parent==HeroBox&&HomeProxyStop.Parent==HeroBox,"Telegram proxy start and stop are in the home hero");
+  check(HomeProxyStart.Top>HeroBox.Controls.OfType<FButton>().First(b=>b.Text=="Запустить").Bottom&&HomeProxyStop.Top==HomeProxyStart.Top,"Telegram proxy actions sit below Zapret actions");
+  check(HomeProxyStart.Bottom<HeroBox.Height&&HomeProxyStop.Bottom<HeroBox.Height,"Telegram proxy actions fit inside the home hero");
+  var cards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();
+  check(cards.Zip(cards.Skip(1),(a,b)=>a.Bottom<=b.Top||a.Right<=b.Left).All(x=>x),"home cards do not overlap");
  }
  internal void VerifyPopupUi(int iteration,Action<bool,string> check){
   var appearance=Page.Controls.OfType<Card>().First(c=>c.Controls.OfType<FButton>().Any(b=>b.Text=="Применить оформление"));var combos=appearance.Controls.OfType<FCombo>().ToArray();

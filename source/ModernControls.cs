@@ -13,7 +13,7 @@ public static class Motion {
  public static float Approach(float value,float target,double rate){return target+(value-target)*(float)Math.Exp(-rate*Delta);}
  public static bool Enabled=true; public static Color Mix(Color a,Color b,float t){t=Math.Max(0,Math.Min(1,t));return Color.FromArgb((int)(a.R+(b.R-a.R)*t),(int)(a.G+(b.G-a.G)*t),(int)(a.B+(b.B-a.B)*t));}}
 public class FButton:Control {
- public bool Accent,Selected;float hover,press,ripple=1;bool over,down;Point origin;double success;bool animating;
+ public bool Accent,Selected;public string NavIcon="";float hover,press,ripple=1;bool over,down;Point origin;double success;bool animating;
  public FButton(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint|ControlStyles.Selectable|ControlStyles.SupportsTransparentBackColor,true);BackColor=Color.Transparent;Cursor=Cursors.Hand;Font=Theme.F(10,true);TabStop=true;Size=new Size(160,44);Motion.Frame+=Animate;}
  void Wake(){animating=true;Invalidate();}
  void Animate(double now){if(!animating)return;hover=Motion.Enabled?Motion.Approach(hover,over?1:0,16):over?1:0;press=Motion.Enabled?Motion.Approach(press,down?1:0,22):down?1:0;ripple=Motion.Enabled?Math.Min(1,ripple+(float)(Motion.Delta/.35)):1;Invalidate();if(Math.Abs(hover-(over?1:0))<.01&&Math.Abs(press-(down?1:0))<.01&&ripple>=1&&now>success)animating=false;}
@@ -24,7 +24,9 @@ public class FButton:Control {
  protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){origin=new Point(Width/2,Height/2);ripple=0;Wake();OnClick(EventArgs.Empty);e.Handled=true;}base.OnKeyDown(e);}
  public void ActivateForPreview(){OnClick(EventArgs.Empty);}
  protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;bool ok=Motion.Now<success;float inset=Motion.Enabled?press*2:0;Color bg=ok?Color.FromArgb(31,64,55):Accent?Theme.Orange:Selected?Motion.Mix(Theme.Side,Theme.Orange,.15f):Motion.Mix(Theme.Card,Color.FromArgb(49,55,72),Motion.Enabled?hover:over?1:0);using(var p=Theme.Round(new RectangleF(1+inset,1+inset,Width-3-inset*2,Height-3-inset*2),17)){using(var b=new SolidBrush(bg))g.FillPath(b,p);using(var pen=new Pen(ok?Theme.Mint:Focused?Theme.Orange:Selected?Color.FromArgb(122,76,48):Theme.Line))g.DrawPath(pen,p);if(Motion.Enabled&&ripple<1){var state=g.Save();g.SetClip(p);float r=ripple*Width*1.4f;using(var b=new SolidBrush(Color.FromArgb((int)(38*(1-ripple)),255,255,255)))g.FillEllipse(b,origin.X-r,origin.Y-r,r*2,r*2);g.Restore(state);}}
-  Color fg=!Enabled?Theme.Muted:ok?Theme.Mint:Accent?Color.FromArgb(43,28,22):Selected?Theme.Orange:Theme.Text;TextRenderer.DrawText(g,ok?(Text=="Выбрать"?"✓  Выбрано":"✓  Готово"):Text,Font,new Rectangle(12,0,Width-24,Height),fg,TextFormatFlags.VerticalCenter|TextFormatFlags.HorizontalCenter|TextFormatFlags.EndEllipsis);}
+  Color fg=!Enabled?Theme.Muted:ok?Theme.Mint:Accent?Color.FromArgb(43,28,22):Selected?Theme.Orange:Theme.Text;
+  if(NavIcon.Length>0){using(var iconFont=new Font("Segoe MDL2 Assets",16,GraphicsUnit.Pixel))using(var brush=new SolidBrush(fg))using(var format=new StringFormat{Alignment=StringAlignment.Center,LineAlignment=StringAlignment.Center})g.DrawString(NavIcon,iconFont,brush,new RectangleF(11,0,30,Height),format);TextRenderer.DrawText(g,Text,Font,new Rectangle(43,0,Width-49,Height),fg,TextFormatFlags.VerticalCenter|TextFormatFlags.Left|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);}
+  else TextRenderer.DrawText(g,ok?(Text=="Выбрать"?"✓  Выбрано":"✓  Готово"):Text,Font,new Rectangle(12,0,Width-24,Height),fg,TextFormatFlags.VerticalCenter|TextFormatFlags.HorizontalCenter|TextFormatFlags.EndEllipsis);}
  protected override void Dispose(bool disposing){if(disposing)Motion.Frame-=Animate;base.Dispose(disposing);}
 }
 public class FInput:Control {
@@ -120,4 +122,3 @@ public class FeedbackCard:Control {
  protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;Color color=Failure?Color.FromArgb(255,143,135):Theme.Mint;using(var p=Theme.Round(new RectangleF(1,1,Width-3,Height-3),20)){using(var b=new SolidBrush(Color.FromArgb(30,37,45)))g.FillPath(b,p);using(var pen=new Pen(color))g.DrawPath(pen,p);}Theme.Txt(g,Failure?"!":"✓",17,20,23,color,true);Theme.Txt(g,Heading,58,12,11,color,true);TextRenderer.DrawText(g,Message,Theme.F(9),new Rectangle(59,37,Width-76,29),Theme.Text,TextFormatFlags.EndEllipsis|TextFormatFlags.VerticalCenter);}
 }
 }
-

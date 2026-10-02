@@ -23,15 +23,16 @@ public class Card:Panel {
  protected override void OnPaint(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var p=Theme.Round(new RectangleF(0,0,Width-1,Height-1),22)){using(var b=new SolidBrush(Theme.Card))e.Graphics.FillPath(b,p);using(var pen=new Pen(Theme.Line))e.Graphics.DrawPath(pen,p);}base.OnPaint(e);}
 }
 public class Hero:Card {
+ public bool WideLayout;
  public string Status="Готов к запуску";public Dragon Pet;public float PaintZoom=1;
  public Hero(){Pet=new Dragon{Bounds=new Rectangle(460,5,300,264),Anchor=AnchorStyles.Top|AnchorStyles.Right};Controls.Add(Pet);}
  protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);var g=e.Graphics;using(var p=Theme.Round(new RectangleF(1,1,Width-3,Height-3),22))using(var b=new LinearGradientBrush(ClientRectangle,Color.FromArgb(37,32,37),Color.FromArgb(32,31,43),0f))g.FillPath(b,p);
   g.ScaleTransform(PaintZoom,PaintZoom);Theme.Txt(g,"ТВОЙ ДРАКОН НА СВЯЗИ",27,26,9,Theme.Orange,true);Theme.Txt(g,"Открывай свой мир.",25,56,26,Theme.Text,true);Theme.Txt(g,"Знакомый Zapret. Немного больше уюта.",28,104,11,Theme.Muted);
-  using(var b=new SolidBrush(Theme.Mint))g.FillEllipse(b,30,Height/PaintZoom>350?257:155,7,7);Theme.Txt(g,Status,44,Height/PaintZoom>350?250:148,11,Theme.Text);Theme.Txt(g,"Статус движка · доступность проверяется отдельно",28,Height/PaintZoom>350?280:178,9,Theme.Muted);
+  using(var b=new SolidBrush(Theme.Mint))g.FillEllipse(b,30,WideLayout?257:155,7,7);Theme.Txt(g,Status,44,WideLayout?250:148,11,Theme.Text);Theme.Txt(g,"Статус движка · доступность проверяется отдельно",28,WideLayout?280:178,9,Theme.Muted);
  }
 }
 public partial class MainForm:Form {
- Backend B;TelegramProxyManager TgProxy;FButton HomeProxyButton;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
+ Backend B;TelegramProxyManager TgProxy;FButton HomeProxyStart,HomeProxyStop;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
  Action HomeLayout=delegate{};Action ViewLayout=delegate{};FeedbackCard Notice;double repaintAfter=Motion.Now+.12;double noticeUntil;FButton ActionButton;FList StrategyList;Label AppliedLabel;
  string Selected;bool Busy,AllowExit;RichTextBox ListEditor;string ListBaseline="";bool Dirty{get{return ListEditor!=null&&!ListEditor.IsDisposed&&!ListEditor.Disposing&&ListDocument.Changed(ListBaseline,ListEditor.Text);}}RichTextBox LogView;StringBuilder Journal=new StringBuilder();string CurrentLog;
  [DllImport("dwmapi.dll")]static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
@@ -41,8 +42,8 @@ public partial class MainForm:Form {
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.4.3",27,75,170,22,9).ForeColor=Theme.Muted;
-  string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*44,178,38,()=>Navigate(n));}
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.4.4",27,75,170,22,9).ForeColor=Theme.Muted;
+  string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"};string[] icons={"\uE80F","\uE8A4","\uE713","\uE8B7","\uE8A5","\uE90F","\uE9D9","\uE77B","\uE81C"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*44,178,38,()=>Navigate(n));Nav[i].NavIcon=icons[i];}
   SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var container=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Bg};Controls.Add(container);container.BringToFront();
@@ -73,13 +74,51 @@ public partial class MainForm:Form {
  void Home(){
   HeroBox=new Hero{Location=new Point(30,22),Size=new Size(Math.Max(750,ContentWidth-61),282),Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top};Page.Controls.Add(HeroBox);HeroBox.Pet.Left=HeroBox.Width-319;HeroBox.Pet.Cursor=Cursors.Hand;HeroBox.Pet.Click+=(s,e)=>Feedback("Буп!","Дракончик рядом.");
   Btn(HeroBox,"Запустить",28,220,155,42,()=>Work(()=>B.Start(Selected)),true);Btn(HeroBox,"Остановить",194,220,145,42,()=>Work(()=>B.Stop()));
+  var proxyTitle=L(HeroBox,"TG WS Proxy",28,267,311,22,10,true);proxyTitle.ForeColor=Theme.Muted;proxyTitle.BackColor=Color.Transparent;
+  HomeProxyStart=Btn(HeroBox,"Запустить TG",28,290,155,42,()=>Work(()=>TgProxy.Start()),true);
+  HomeProxyStop=Btn(HeroBox,"Остановить TG",194,290,145,42,()=>Work(()=>TgProxy.Stop()));
   var card=Box(322,139);Title(card,"Твоя стратегия",Path.GetFileNameWithoutExtension(Selected)+"  ·  "+B.Strategies.Length+" вариантов в сборке");HomeStrategy=card.Controls.OfType<Label>().Skip(1).First();Btn(card,"Выбрать стратегию",22,83,210,39,()=>Navigate("Стратегии"));L(card,"Не подошла? Попробуй другой вариант\nили открой раздел «Проверки».",267,83,430,42,10).ForeColor=Theme.Muted;
-  var info=Box(477,134);Title(info,"Всё под лапой", "Настрой запуск с Windows, игровые порты и Telegram.");Btn(info,"Служба Windows",22,82,195,36,()=>ReloadPage("Служба"));Btn(info,"Игровые порты",228,82,195,36,()=>Navigate("Настройки"));HomeProxyButton=Btn(info,"Запустить TG WS Proxy",434,82,195,36,()=>{if(TgProxy.Running)Navigate("Инструменты");else Work(()=>TgProxy.Start(),()=>ReloadPage("Главная"));});
+  var info=Box(477,134);Title(info,"Всё под лапой", "Настрой запуск с Windows и игровые порты.");Btn(info,"Служба Windows",22,82,195,36,()=>ReloadPage("Служба"));Btn(info,"Игровые порты",228,82,195,36,()=>Navigate("Настройки"));
   var footer=L(Page,"Движок и драйверы — из твоего архива. FurZap — отдельная оболочка.",33,627,800,35,9);footer.ForeColor=Theme.Muted;
   HeroBox.Anchor=AnchorStyles.Top|AnchorStyles.Left;card.Anchor=AnchorStyles.Top|AnchorStyles.Left;info.Anchor=AnchorStyles.Top|AnchorStyles.Left;
-  HomeBase.Clear();BaseFonts.Clear();CaptureHome(HeroBox);CaptureHome(card);CaptureHome(info);CaptureHome(footer);var comfort=ComfortHome();CaptureHome(comfort);HomeLayout=()=>{Point homeScroll=Page.AutoScrollPosition;Page.AutoScrollPosition=Point.Empty;ResetHome();if(HeroBox==null||HeroBox.IsDisposed)return;int width=Math.Max(750,(int)(Page.Parent.ClientSize.Width/RenderZoom)-65);bool wide=width>=1160;if(wide){int left=(int)(width*.64),right=width-left-18;HeroBox.SetBounds(30,22,left,420);card.SetBounds(48+left,22,right,186);info.SetBounds(48+left,224,right,218);HeroBox.Pet.SetBounds(left-315,62,300,300);HeroBox.Controls[1].Top=340;HeroBox.Controls[2].Top=340;card.Controls[0].Width=right-44;card.Controls[1].SetBounds(23,52,right-46,38);card.Controls[2].SetBounds(22,97,right-44,38);card.Controls[3].SetBounds(23,144,right-46,36);info.Controls[0].Width=right-44;info.Controls[1].SetBounds(23,49,right-46,41);for(int i=2;i<5;i++)info.Controls[i].SetBounds(22,94+(i-2)*39,right-44,33);footer.Top=463;}else{HeroBox.SetBounds(30,22,width,282);HeroBox.Pet.SetBounds(width-319,5,300,264);HeroBox.Controls[1].Top=220;HeroBox.Controls[2].Top=220;card.SetBounds(30,322,width,139);card.Controls[0].Width=width-45;card.Controls[1].SetBounds(23,52,width-45,24);card.Controls[2].SetBounds(22,83,210,39);card.Controls[3].SetBounds(267,83,430,42);info.SetBounds(30,477,width,134);info.Controls[0].Width=width-45;info.Controls[1].SetBounds(23,52,width-45,24);for(int i=2;i<5;i++)info.Controls[i].SetBounds(22+(i-2)*206,82,195,36);footer.Top=627;}comfort.Top=wide?510:679;comfort.Width=width;ScaleHome(HeroBox,card,info,footer,comfort);HeroBox.Invalidate(true);card.Invalidate(true);info.Invalidate(true);Page.AutoScrollPosition=new Point(-homeScroll.X,-homeScroll.Y);};HomeLayout();RefreshState();
+  HomeBase.Clear();BaseFonts.Clear();CaptureHome(HeroBox);CaptureHome(card);CaptureHome(info);CaptureHome(footer);
+  var comfort=ComfortHome();CaptureHome(comfort);
+  HomeLayout=()=>{
+   Point homeScroll=Page.AutoScrollPosition;Page.AutoScrollPosition=Point.Empty;ResetHome();
+   if(HeroBox==null||HeroBox.IsDisposed)return;
+   int width=Math.Max(750,(int)(Page.Parent.ClientSize.Width/RenderZoom)-65);
+   bool wide=width>=1160;HeroBox.WideLayout=wide;
+   if(wide){
+    int left=(int)(width*.64),right=width-left-18;
+    HeroBox.SetBounds(30,22,left,450);card.SetBounds(48+left,22,right,186);info.SetBounds(48+left,224,right,218);
+    HeroBox.Pet.SetBounds(left-315,62,300,300);
+    HeroBox.Controls[1].Top=326;HeroBox.Controls[2].Top=326;
+    proxyTitle.Top=370;HomeProxyStart.Top=392;HomeProxyStop.Top=392;
+    card.Controls[0].Width=right-44;card.Controls[1].SetBounds(23,52,right-46,38);
+    card.Controls[2].SetBounds(22,97,right-44,38);card.Controls[3].SetBounds(23,144,right-46,36);
+    info.Controls[0].Width=right-44;info.Controls[1].SetBounds(23,49,right-46,41);
+    info.Controls[2].SetBounds(22,103,right-44,38);info.Controls[3].SetBounds(22,150,right-44,38);
+    footer.Top=486;
+   }else{
+    HeroBox.SetBounds(30,22,width,350);HeroBox.Pet.SetBounds(width-319,5,300,264);
+    HeroBox.Controls[1].Top=210;HeroBox.Controls[2].Top=210;
+    proxyTitle.Top=266;HomeProxyStart.Top=290;HomeProxyStop.Top=290;
+    card.SetBounds(30,390,width,139);card.Controls[0].Width=width-45;
+    card.Controls[1].SetBounds(23,52,width-45,24);card.Controls[2].SetBounds(22,83,210,39);
+    card.Controls[3].SetBounds(267,83,430,42);
+    info.SetBounds(30,545,width,134);info.Controls[0].Width=width-45;
+    info.Controls[1].SetBounds(23,52,width-45,24);
+    info.Controls[2].SetBounds(22,82,195,36);info.Controls[3].SetBounds(228,82,195,36);
+    footer.Top=695;
+   }
+   comfort.Top=wide?535:747;comfort.Width=width;
+   ScaleHome(HeroBox,card,info,footer,comfort);
+   HeroBox.Invalidate(true);card.Invalidate(true);info.Invalidate(true);
+   Page.AutoScrollPosition=new Point(-homeScroll.X,-homeScroll.Y);
+  };
+  HomeLayout();RefreshState();
  }
- void RefreshState(){RefreshExtras();RefreshComfort();if(HomeProxyButton!=null&&!HomeProxyButton.IsDisposed)HomeProxyButton.Text=TgProxy.Running?"TG WS Proxy работает":"Запустить TG WS Proxy";if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":B.Running?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):B.ServiceState()==4?"Запущена служба Windows":"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
+ void RefreshState(){RefreshExtras();RefreshComfort();if(HomeProxyStart!=null&&!HomeProxyStart.IsDisposed)HomeProxyStart.Enabled=!TgProxy.Running;if(HomeProxyStop!=null&&!HomeProxyStop.IsDisposed)HomeProxyStop.Enabled=TgProxy.Running;if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":B.Running?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):B.ServiceState()==4?"Запущена служба Windows":"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
  void Choose(string s,bool start=false){
   if(B.Preview){Selected=s;return;}
   Work(()=>B.SelectStrategy(s,start),()=>{Selected=B.Get("strategy",s);if(StrategyList!=null){StrategyList.Applied=Selected;StrategyList.Invalidate();}if(AppliedLabel!=null)AppliedLabel.Text="✓ Выбрано: "+Path.GetFileNameWithoutExtension(Selected);});

@@ -7,7 +7,7 @@ public partial class MainForm {
  internal void VerifyScrollUi(Action<bool,string> check){
   foreach(bool maximized in new[]{false,true}){
    WindowState=maximized?FormWindowState.Maximized:FormWindowState.Normal;
-   foreach(string section in new[]{"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"}){
+   foreach(string section in new[]{"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Обновления","Проверки","Профили","Журнал"}){
     Navigate(section);Page.AutoScrollPosition=Point.Empty;Page.PerformLayout();
     var original=Page.Controls.Cast<Control>().ToDictionary(c=>c,c=>c.Top);
     using(var router=new PageWheelRouter(Page)){
@@ -45,4 +45,3 @@ public partial class MainForm {
  }
 }
 }
-

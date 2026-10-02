@@ -32,7 +32,7 @@ public class Hero:Card {
  }
 }
 public partial class MainForm:Form {
- Backend B;TelegramProxyManager TgProxy;FButton HomeProxyStart,HomeProxyStop;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
+ Backend B;TelegramProxyManager TgProxy;FButton HomeProxyStart,HomeProxyStop,HomeConnectButton;Label HomeProxyStatus,HomeTgDetails;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
  Action HomeLayout=delegate{};Action ViewLayout=delegate{};FeedbackCard Notice;double repaintAfter=Motion.Now+.12;double noticeUntil;FButton ActionButton;FList StrategyList;Label AppliedLabel;
  string Selected;bool Busy,AllowExit;RichTextBox ListEditor;string ListBaseline="";bool Dirty{get{return ListEditor!=null&&!ListEditor.IsDisposed&&!ListEditor.Disposing&&ListDocument.Changed(ListBaseline,ListEditor.Text);}}RichTextBox LogView;StringBuilder Journal=new StringBuilder();string CurrentLog;
  [DllImport("dwmapi.dll")]static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
@@ -42,9 +42,9 @@ public partial class MainForm:Form {
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.4.7",27,75,170,22,9).ForeColor=Theme.Muted;
-  string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"};string[] icons={"\uE80F","\uE8F1","\uE9F3","\uE713","\uE8FD","\uE90F","\uE9D9","\uE77B","\uE81C"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*44,178,38,()=>Navigate(n));Nav[i].NavIcon=icons[i];}
-  SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.5.0",27,75,170,22,9).ForeColor=Theme.Muted;
+  string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Обновления","Проверки","Профили","Журнал"};string[] icons={"\uE80F","\uE8F1","\uE9F3","\uE713","\uE8FD","\uE90F","\uE896","\uE9D9","\uE77B","\uE81C"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*40,178,38,()=>Navigate(n));Nav[i].NavIcon=icons[i];}
+  SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");Side.Resize+=(s,e)=>UpdateSidebarPetVisibility();L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var container=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Bg};Controls.Add(container);container.BringToFront();
   var top=new Panel{Dock=DockStyle.Top,Height=80};container.Controls.Add(top);InitializeAppUpdates(top);Subtitle=L(top,"",31,24,720,35,21,true);var eyebrow=L(top,"DESKTOP / WINDOWS",31,59,400,17,8);eyebrow.ForeColor=Theme.Muted;
@@ -66,7 +66,7 @@ public partial class MainForm:Form {
   if(Busy)return;if(Subtitle.Text==name&&Page.Controls.Count>0){RefreshState();return;}
   SavePage();Page.SuspendLayout();try{Page.Controls.Clear();Page.AutoScrollPosition=Point.Empty;Subtitle.Text=name;
   if(!RestorePage(name)){ListEditor=null;ListBaseline="";PageBounds=new Dictionary<Control,Rectangle>();PageFonts=new Dictionary<Control,Font>();PageStretch=new Dictionary<Control,bool>();HomeLayout=delegate{};HeroBox=null;LogView=null;StrategyList=null;AppliedLabel=null;
-   switch(name){case "Главная":Home();break;case "Стратегии":Strategies();break;case "Служба":Service();break;case "Настройки":Settings();break;case "Списки":Lists();break;case "Инструменты":Tools();break;case "Журнал":Logs();break;case "Проверки":ChecksPage();break;case "Профили":ProfilesPage();break;}ApplyPageScale();}
+   switch(name){case "Главная":Home();break;case "Стратегии":Strategies();break;case "Служба":Service();break;case "Настройки":Settings();break;case "Списки":Lists();break;case "Инструменты":Tools();break;case "Обновления":UpdatesPage();break;case "Журнал":Logs();break;case "Проверки":ChecksPage();break;case "Профили":ProfilesPage();break;}ApplyPageScale();}
   foreach(var n in Nav){n.Selected=n.Text==name;n.Invalidate();}ViewLayout();HomeLayout();AddHints(Page);RefreshState();pageSlide=Motion.Now;
   }finally{Page.ResumeLayout(true);}RestoreScroll(name);repaintAfter=Motion.Now+.20;
  }
@@ -74,11 +74,13 @@ public partial class MainForm:Form {
  void Home(){
   HeroBox=new Hero{Location=new Point(30,22),Size=new Size(Math.Max(750,ContentWidth-61),282),Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top};Page.Controls.Add(HeroBox);HeroBox.Pet.Left=HeroBox.Width-319;HeroBox.Pet.Cursor=Cursors.Hand;HeroBox.Pet.Click+=(s,e)=>Feedback("Буп!","Дракончик рядом.");
   Btn(HeroBox,"Запустить",28,220,155,42,()=>Work(()=>B.Start(Selected)),true);Btn(HeroBox,"Остановить",194,220,145,42,()=>Work(()=>B.Stop()));
-  var proxyTitle=L(HeroBox,"TG WS Proxy",28,267,311,22,10,true);proxyTitle.ForeColor=Theme.Muted;proxyTitle.BackColor=Color.Transparent;
+  HomeProxyStatus=L(HeroBox,"TG WS Proxy",28,267,390,22,10,true);HomeProxyStatus.ForeColor=Theme.Muted;HomeProxyStatus.BackColor=Color.Transparent;
   HomeProxyStart=Btn(HeroBox,"Запустить TG",28,290,155,42,()=>Work(()=>TgProxy.Start()),true);
   HomeProxyStop=Btn(HeroBox,"Остановить TG",194,290,145,42,()=>Work(()=>TgProxy.Stop()));
   var card=Box(322,139);Title(card,"Твоя стратегия",Path.GetFileNameWithoutExtension(Selected)+"  ·  "+B.Strategies.Length+" вариантов в сборке");HomeStrategy=card.Controls.OfType<Label>().Skip(1).First();Btn(card,"Выбрать стратегию",22,83,210,39,()=>Navigate("Стратегии"));L(card,"Не подошла? Попробуй другой вариант\nили открой раздел «Проверки».",267,83,430,42,10).ForeColor=Theme.Muted;
-  var info=Box(477,134);Title(info,"Всё под лапой", "Настрой запуск с Windows и игровые порты.");Btn(info,"Служба Windows",22,82,195,36,()=>ReloadPage("Служба"));Btn(info,"Игровые порты",228,82,195,36,()=>Navigate("Настройки"));
+  var info=Box(477,198);Title(info,"Всё под лапой", "Настрой запуск с Windows, порты и Telegram.");Btn(info,"Служба Windows",22,82,195,36,()=>ReloadPage("Служба"));Btn(info,"Игровые порты",228,82,195,36,()=>Navigate("Настройки"));
+  HomeTgDetails=L(info,"Telegram: проверяю…",23,121,690,23,9);HomeTgDetails.ForeColor=Theme.Muted;
+  HomeConnectButton=Btn(info,"Подключить Telegram",22,150,252,36,ConnectTelegram,true);
   var footer=L(Page,"Движок и драйверы — из твоего архива. FurZap — отдельная оболочка.",33,627,800,35,9);footer.ForeColor=Theme.Muted;
   HeroBox.Anchor=AnchorStyles.Top|AnchorStyles.Left;card.Anchor=AnchorStyles.Top|AnchorStyles.Left;info.Anchor=AnchorStyles.Top|AnchorStyles.Left;
   HomeBase.Clear();BaseFonts.Clear();CaptureHome(HeroBox);CaptureHome(card);CaptureHome(info);CaptureHome(footer);
@@ -90,35 +92,37 @@ public partial class MainForm:Form {
    bool wide=width>=1160;HeroBox.WideLayout=wide;
    if(wide){
     int left=(int)(width*.64),right=width-left-18;
-    HeroBox.SetBounds(30,22,left,450);card.SetBounds(48+left,22,right,186);info.SetBounds(48+left,224,right,218);
+    HeroBox.SetBounds(30,22,left,450);card.SetBounds(48+left,22,right,186);info.SetBounds(48+left,224,right,278);
     HeroBox.Pet.SetBounds(left-315,62,300,300);
     HeroBox.Controls[1].Top=326;HeroBox.Controls[2].Top=326;
-    proxyTitle.Top=370;HomeProxyStart.Top=392;HomeProxyStop.Top=392;
+    HomeProxyStatus.Top=370;HomeProxyStart.Top=392;HomeProxyStop.Top=392;
     card.Controls[0].Width=right-44;card.Controls[1].SetBounds(23,52,right-46,38);
     card.Controls[2].SetBounds(22,97,right-44,38);card.Controls[3].SetBounds(23,144,right-46,36);
     info.Controls[0].Width=right-44;info.Controls[1].SetBounds(23,49,right-46,41);
     info.Controls[2].SetBounds(22,103,right-44,38);info.Controls[3].SetBounds(22,150,right-44,38);
-    footer.Top=486;
+    HomeTgDetails.SetBounds(22,198,right-44,22);HomeConnectButton.SetBounds(22,226,right-44,36);
+    footer.Top=514;
    }else{
     HeroBox.SetBounds(30,22,width,350);HeroBox.Pet.SetBounds(width-319,5,300,264);
     HeroBox.Controls[1].Top=210;HeroBox.Controls[2].Top=210;
-    proxyTitle.Top=266;HomeProxyStart.Top=290;HomeProxyStop.Top=290;
+    HomeProxyStatus.Top=266;HomeProxyStart.Top=290;HomeProxyStop.Top=290;
     card.SetBounds(30,390,width,139);card.Controls[0].Width=width-45;
     card.Controls[1].SetBounds(23,52,width-45,24);card.Controls[2].SetBounds(22,83,210,39);
     card.Controls[3].SetBounds(267,83,430,42);
-    info.SetBounds(30,545,width,134);info.Controls[0].Width=width-45;
+    info.SetBounds(30,545,width,198);info.Controls[0].Width=width-45;
     info.Controls[1].SetBounds(23,52,width-45,24);
     info.Controls[2].SetBounds(22,82,195,36);info.Controls[3].SetBounds(228,82,195,36);
-    footer.Top=695;
+    HomeTgDetails.SetBounds(23,121,width-46,23);HomeConnectButton.SetBounds(22,150,252,36);
+    footer.Top=759;
    }
-   comfort.Top=wide?535:747;comfort.Width=width;
+   comfort.Top=wide?569:811;comfort.Width=width;
    ScaleHome(HeroBox,card,info,footer,comfort);
    HeroBox.Invalidate(true);card.Invalidate(true);info.Invalidate(true);
    Page.AutoScrollPosition=new Point(-homeScroll.X,-homeScroll.Y);
   };
   HomeLayout();RefreshState();
  }
- void RefreshState(){RefreshExtras();RefreshComfort();bool proxyRunning=TgProxy.Running;if(HomeProxyStart!=null&&!HomeProxyStart.IsDisposed)HomeProxyStart.Enabled=!proxyRunning;if(HomeProxyStop!=null&&!HomeProxyStop.IsDisposed)HomeProxyStop.Enabled=proxyRunning;if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":B.Running?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):B.ServiceState()==4?"Запущена служба Windows":"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
+ void RefreshState(){RefreshExtras();RefreshComfort();var proxy=TgProxy.State();if(HomeProxyStart!=null&&!HomeProxyStart.IsDisposed)HomeProxyStart.Enabled=!proxy.Running&&!proxy.OtherRunning;if(HomeProxyStop!=null&&!HomeProxyStop.IsDisposed)HomeProxyStop.Enabled=proxy.Running;if(HomeConnectButton!=null&&!HomeConnectButton.IsDisposed)HomeConnectButton.Enabled=proxy.Running||proxy.OtherRunning;RefreshTelegramStatus(proxy);if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":B.Running?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):B.ServiceState()==4?"Запущена служба Windows":"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
  void Choose(string s,bool start=false){
   if(B.Preview){Selected=s;return;}
   Work(()=>B.SelectStrategy(s,start),()=>{Selected=B.Get("strategy",s);if(StrategyList!=null){StrategyList.Applied=Selected;StrategyList.Invalidate();}if(AppliedLabel!=null)AppliedLabel.Text="✓ Выбрано: "+Path.GetFileNameWithoutExtension(Selected);});
@@ -171,15 +175,15 @@ public partial class MainForm:Form {
  void Tools(){
   var d=Box(22,155);Title(d,"Проверить, что происходит","Файлы движка, службы, TCP, прокси и возможные конфликты. Результат появится в окне.");Btn(d,"Диагностика",23,97,209,40,ShowDiagnostics,true);Btn(d,"Подбор стратегий",244,97,215,40,()=>Navigate("Проверки"));Btn(d,"Результаты тестов",471,97,224,40,()=>{string p=B.P("utils/test results");Directory.CreateDirectory(p);Open(p);});
   TelegramProxyCard();
-  var u=Box(442,159);Title(u,"Актуальные списки","Обновления загружаются из репозитория Flowseal. Ошибка загрузки не заменит файл.");Btn(u,"Обновить IPSet",23,100,209,40,()=>Work(()=>B.UpdateIps()));Btn(u,"Обновление движка",244,100,215,40,UpdateEngine);Btn(u,"Hosts: просмотр",471,100,224,40,DownloadHosts);
+  var u=Box(442,159);Title(u,"Актуальные списки","Списки IP и hosts можно просмотреть и обновить отдельно.");Btn(u,"Центр обновлений",23,100,209,40,()=>Navigate("Обновления"));Btn(u,"Обновить IPSet",244,100,215,40,()=>Work(()=>B.UpdateIps()));Btn(u,"Hosts: просмотр",471,100,224,40,DownloadHosts);
   var t=Box(618,159);Title(t,"Обслуживание","Очистка кэша Discord и доступ к исходным инструментам сборки.");Btn(t,"Очистить кэш Discord",23,100,238,40,()=>{if(Confirm("Удалить только Cache, Code Cache и GPUCache Discord? Сначала закрой Discord."))Work(()=>B.ClearDiscord());});Btn(t,"Исходный менеджер",272,100,234,40,()=>{if(B.Preview)return;if(Confirm("Открыть оригинальный service.bat? Его действия могут изменять сетевые настройки и службы."))OpenProcess(Environment.GetEnvironmentVariable("ComSpec")??"cmd.exe","/d /s /c \"\""+B.P("service.bat")+"\" admin\"");});Btn(t,"Папка сборки",517,100,178,40,()=>Open(B.Root));
   var h=Box(794,143);Title(h,"Изменения hosts можно отменить","FurZap добавляет отдельный блок, сохраняя другие записи. Полная копия — в data/backups.");Btn(h,"Удалить блок FurZap",23,90,258,36,()=>{if(Confirm("Удалить из hosts только блок, добавленный FurZap?"))Work(()=>B.RemoveHosts());});
   L(Page,"Встроенный подбор с прогрессом и отменой находится в разделе «Проверки».\nПредыдущая конфигурация возвращается после завершения тестов.",33,954,800,50,10).ForeColor=Theme.Muted;
-  UpdateCard();MaintenanceCard();
+  L(Page,"Обновления FurZap, движка и TG WS Proxy — в разделе «Обновления».",33,1017,800,32,9).ForeColor=Theme.Muted;
  }
  void RunTests(){if(B.Preview)return;if(ExternalTool!=null&&!ExternalTool.HasExited){MessageBox.Show(this,"Исходный инструмент уже открыт.");return;}if(B.Running||B.ServiceState()!=0){MessageBox.Show(this,"Сначала останови процесс и удали службу со страницы Служба. После тестов её можно установить снова.","Тесты стратегий");return;}if(!Confirm("Открыть исходные интерактивные тесты? Они запускают стратегии и проверяют сеть; не закрывай окно до завершения."))return;OpenProcess("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Backend.Quote(B.P("utils/test zapret.ps1")));Log("Открыты исходные тесты. Их результат не считается известным до завершения.");}
  void DownloadHosts(){Work(()=>{string s=B.Download("https://raw.githubusercontent.com/Flowseal/zapret-discord-youtube/refs/heads/main/.service/hosts");UI(()=>TextDialog("Hosts — проверь записи перед применением",s,true,value=>{if(Confirm("Добавить эти записи в системный hosts? Существующие записи сохранятся, будет сделана резервная копия."))Work(()=>B.ApplyHosts(value));}));});}
- async void CheckVersion(bool show){if(B.Preview)return;if(show&&Busy)return;try{var release=await Task.Run(()=>EngineUpdater.Latest(B));Version current,next;bool newer=Version.TryParse(B.EngineVersion,out current)&&Version.TryParse(release.Version,out next)&&next>current;Log("Версия Zapret у Flowseal: "+release.Version+". У тебя: "+B.EngineVersion+".");if(newer){Feedback("Доступен Zapret "+release.Version,"Открой Инструменты → Движок и восстановление.");}else if(show)Feedback("Движок актуален","Zapret "+B.EngineVersion);}catch(Exception ex){Log("Проверка обновлений движка: "+ex.Message);if(show)Error(ex);}}
+ async void CheckVersion(bool show){if(B.Preview)return;if(show&&Busy)return;try{var release=await Task.Run(()=>EngineUpdater.Latest(B));Version current,next;bool newer=Version.TryParse(B.EngineVersion,out current)&&Version.TryParse(release.Version,out next)&&next>current;Log("Версия Zapret у Flowseal: "+release.Version+". У тебя: "+B.EngineVersion+".");if(newer){Feedback("Доступен Zapret "+release.Version,"Открой раздел «Обновления».");}else if(show)Feedback("Движок актуален","Zapret "+B.EngineVersion);}catch(Exception ex){Log("Проверка обновлений движка: "+ex.Message);if(show)Error(ex);}}
  void Logs(){Btn(Page,"Сохранить журнал",32,20,225,41,()=>{using(var s=new SaveFileDialog{FileName="FurZap-log.txt",Filter="Текстовый файл|*.txt"})if(s.ShowDialog(this)==DialogResult.OK)File.WriteAllText(s.FileName,Journal.ToString(),Encoding.UTF8);},true);Btn(Page,"Очистить экран",269,20,210,41,()=>{Journal.Clear();if(LogView!=null)LogView.Clear();});
   Btn(Page,"Отчёт об ошибке",492,20,230,41,ShowErrorReport);
   LogView=new RoundedTextBox{Bounds=new Rectangle(32,81,ContentWidth-65,Math.Max(450,Page.ClientSize.Height-105)),Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top|AnchorStyles.Bottom,BackColor=Theme.Card,ForeColor=Theme.Mint,Font=new Font("Consolas",10),ReadOnly=true,BorderStyle=BorderStyle.None,DetectUrls=false,Text=Journal.ToString()};Page.Controls.Add(LogView);LogView.SelectionStart=LogView.TextLength;LogView.ScrollToCaret();

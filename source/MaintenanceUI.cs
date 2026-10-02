@@ -9,13 +9,13 @@ namespace FurZap {
 public partial class MainForm {
  bool EngineUpdating;Label EngineStatus;CancellationTokenSource EngineCancel;
  void MaintenanceCard(){
-  var card=Box(1297,257);Title(card,"Движок и восстановление","Zapret "+B.EngineVersion+" · обновление из Flowseal с сохранением списков и портов.");
+  var card=Box(428,257);Title(card,"Zapret · версия "+B.EngineVersion,"Движок из Flowseal. Обновление сохраняет списки и порты.");
   EngineStatus=L(card,"Перед установкой сохраняется предыдущий движок целиком.",23,79,700,24,9);
   Check(card,"Проверять обновления движка при открытии",23,111,B.CheckEngineUpdates,v=>{try{B.SetEngineUpdateCheck(v);}catch(Exception ex){Error(ex);}});
   Btn(card,"Обновить Zapret",23,153,220,36,UpdateEngine,true);
-  Btn(card,"Вернуть движок",255,153,220,36,()=>{if(!B.CanRollbackEngine){Feedback("Копии пока нет","Она появится после первого обновления движка.");return;}if(Confirm("Вернуть предыдущий движок и его конфигурацию? Текущий режим работы будет сохранён."))Work(()=>B.RollbackEngine(),()=>ReloadPage("Инструменты"));});
+  Btn(card,"Вернуть движок",255,153,220,36,()=>{if(!B.CanRollbackEngine){Feedback("Копии пока нет","Она появится после первого обновления движка.");return;}if(Confirm("Вернуть предыдущий движок и его конфигурацию? Текущий режим работы будет сохранён."))Work(()=>B.RollbackEngine(),()=>ReloadPage("Обновления"));});
   Btn(card,"История обновлений",487,153,220,36,()=>TextDialog("История обновлений",B.UpdateHistory(),false,null));
-  Btn(card,"Вернуть FurZap",23,207,220,32,RollbackApp);
+  Btn(card,"Проверить версию",23,207,220,32,()=>CheckVersion(true));
   var cancelButton=new FButton{Text="Отменить загрузку",Bounds=new Rectangle(255,207,220,32)};cancelButton.Click+=(s,e)=>{if(EngineCancel!=null)EngineCancel.Cancel();};card.Controls.Add(cancelButton);
   Btn(card,"Конфликты / помощь",487,207,220,32,ShowDiagnostics);
  }
@@ -40,7 +40,7 @@ public partial class MainForm {
     if(EngineStatus!=null)EngineStatus.Text="Применяю движок. Дождись завершения…";
     await Task.Run(()=>B.ReplaceEngine(prepared));
    }
-   Busy=false;ReloadPage("Инструменты");Feedback("Движок обновлён","Zapret "+B.EngineVersion+". Предыдущая версия доступна для отката.");
+   Busy=false;ReloadPage("Обновления");Feedback("Движок обновлён","Zapret "+B.EngineVersion+". Предыдущая версия доступна для отката.");
   }catch(OperationCanceledException){Feedback("Загрузка отменена","Работающий движок не изменён.");}
   catch(Exception ex){Error(ex);}finally{EngineCancel=null;Busy=false;EngineUpdating=false;RefreshState();RefreshPetActivity();}
  }

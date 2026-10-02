@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 using System.Threading;
+using System.IO.Compression;
 namespace FurZap {
 public static class Tests {
  static int count;
@@ -39,6 +40,13 @@ public static class Tests {
    Check(Backend.Quote("abc")=="\"abc\"","quote plain value");Check(Backend.Quote("C:\\path with spaces\\")=="\"C:\\path with spaces\\\\\"","quote trailing slash");Check(Backend.Quote("a\"b")=="\"a\\\"b\"","escape embedded quote");
    b.Pref["strategy"]="general (ALT).bat";b.SavePrefs();Check(new Backend(copy,true).Get("strategy")=="general (ALT).bat","settings persistence");
    b.SaveProfile("VRChat");Check(b.Profiles().Contains("VRChat"),"named profile saved");Reject(()=>b.SaveProfile("VRChat"),"existing profile cannot be overwritten silently");
+   string settingsZip=Path.Combine(temp,"settings.zip");string savedList=File.ReadAllText(b.P("lists/list-general-user.txt"));
+   SettingsArchive.Export(b,settingsZip);Check(File.Exists(settingsZip),"settings export creates ZIP");
+   b.SaveList("list-general-user.txt","another.example\n");b.Pref["theme"]="cyan";b.SavePrefs();
+   SettingsArchive.Import(b,settingsZip);Check(File.ReadAllText(b.P("lists/list-general-user.txt"))==savedList&&b.Get("theme")=="","settings import restores list and preferences");
+   Check(b.Profiles().Contains("VRChat"),"settings import restores profiles");
+   string unsafeZip=Path.Combine(temp,"unsafe.zip");using(var zip=ZipFile.Open(unsafeZip,ZipArchiveMode.Create)){var entry=zip.CreateEntry("../outside.txt");using(var w=new StreamWriter(entry.Open()))w.Write("unsafe");}
+   Reject(()=>SettingsArchive.Import(b,unsafeZip),"settings import rejects ZIP traversal");
    foreach(string name in new[]{"../escape","CON","test/path","","a.b","LPT1"})Reject(()=>Backend.ProfileName(name),"invalid profile name: "+name);
    string snapshot=Path.Combine(b.Data,"profiles","VRChat");string before=File.ReadAllText(b.P("lists/list-general-user.txt"));b.SaveList("list-general-user.txt","changed.example\n");b.RestoreFiles(snapshot);Check(File.ReadAllText(b.P("lists/list-general-user.txt"))==before,"snapshot restores exact list bytes");
    string absent=b.P("lists/list-exclude-user.txt");File.Delete(absent);string absentCopy=b.Checkpoint("absence test");b.EnsureLists();b.RestoreFiles(absentCopy);Check(!File.Exists(absent),"snapshot restores file absence");

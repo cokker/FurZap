@@ -21,7 +21,7 @@ public partial class MainForm {
  }
  void SetUpdateStatus(string message){UpdateMessage=message;if(UpdateStatus!=null&&!UpdateStatus.IsDisposed)UpdateStatus.Text=message;}
  void UpdateCard(){
-  var c=Box(785,260);Title(c,"Обновления FurZap","Оболочка загружается с GitHub. Установка — после твоего подтверждения.");
+  var c=Box(1020,260);Title(c,"Обновления FurZap","Оболочка загружается с GitHub. Установка — после твоего подтверждения.");
   Check(c,"Проверять обновления FurZap при запуске и каждый час",23,85,B.Get("app-update-check","yes")=="yes",v=>{B.Pref["app-update-check"]=v?"yes":"no";B.SavePrefs();});
   Check(c,"Автоматически скачивать новую версию FurZap",23,123,B.Get("app-update-download","yes")=="yes",v=>{B.Pref["app-update-download"]=v?"yes":"no";B.SavePrefs();});
   UpdateStatus=L(c,UpdateMessage,23,161,c.Width-46,32,9);UpdateStatus.ForeColor=Theme.Muted;
@@ -83,4 +83,3 @@ public partial class MainForm {
  }
 }
 }
-

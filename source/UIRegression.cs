@@ -6,6 +6,15 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 namespace FurZap {
 public partial class MainForm {
+ internal void VerifyToolsLayout(Action<bool,string> check,string file){
+  Navigate("Инструменты");Page.AutoScrollPosition=Point.Empty;
+  var cards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();
+  check(cards.Length>=7,"Tools shows all cards");
+  check(cards.Zip(cards.Skip(1),(a,b)=>a.Bottom<=b.Top).All(x=>x),"Tools cards do not overlap at "+UiZoom+"x");
+  var telegram=cards.FirstOrDefault(c=>c.Controls.OfType<Label>().Any(l=>l.Text=="Telegram · TG WS Proxy"));
+  check(telegram!=null&&telegram.Top<cards[2].Top,"Telegram proxy appears near top of Tools");
+  Refresh();Screenshot(file);
+ }
  internal void VerifyEditorUi(Action<bool,string> check){
   foreach(string section in new[]{"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"}){Navigate(section);check(Opacity==1,"window stays opaque on "+section);AnimateFrame(Motion.Now+.08);check(Opacity==1,"window stays opaque during animation on "+section);}
   Navigate("Инструменты");check(Page.Controls.OfType<Card>().Any(c=>c.Controls.OfType<FButton>().Any(b=>b.Text=="Скачать / обновить")),"Telegram proxy controls visible in Tools");

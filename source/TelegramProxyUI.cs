@@ -4,7 +4,7 @@ using System.Drawing;
 namespace FurZap {
 public partial class MainForm {
  void TelegramProxyCard(){
-  var card=Box(775,231);
+  var card=Box(194,231);
   Title(card,"Telegram · TG WS Proxy","Локальный MTProto-прокси Flowseal. Работает отдельно от winws; подключи его в Telegram Desktop.");
   string status=B.Preview?"Предпросмотр":TgProxy.Running?"Работает":TgProxy.Executable==null?"Не установлен":"Готов к запуску";
   L(card,"Состояние: "+status,23,82,690,25,10,true).ForeColor=Theme.Mint;

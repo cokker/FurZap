@@ -9,7 +9,7 @@ namespace FurZap {
 public partial class MainForm {
  bool EngineUpdating;Label EngineStatus;CancellationTokenSource EngineCancel;
  void MaintenanceCard(){
-  var card=Box(1064,215);Title(card,"Движок и восстановление","Zapret "+B.EngineVersion+" · обновление из Flowseal с сохранением списков и портов.");
+  var card=Box(1297,215);Title(card,"Движок и восстановление","Zapret "+B.EngineVersion+" · обновление из Flowseal с сохранением списков и портов.");
   EngineStatus=L(card,"Перед установкой сохраняется предыдущий движок целиком.",23,84,700,28,9);
   Btn(card,"Обновить Zapret",23,124,220,36,UpdateEngine,true);
   Btn(card,"Вернуть движок",255,124,220,36,()=>{if(!B.CanRollbackEngine){Feedback("Копии пока нет","Она появится после первого обновления движка.");return;}if(Confirm("Вернуть предыдущий движок и его конфигурацию? Текущий режим работы будет сохранён."))Work(()=>B.RollbackEngine(),()=>ReloadPage("Инструменты"));});

@@ -22,14 +22,14 @@ sealed class ApplyTestBackend:Backend {
 public static class ApplyTests {
  public static void Run(string root,Action<bool,string> check,Action<Action,string> reject){
   var b=new ApplyTestBackend(root);string strategy=b.Strategies[0];b.Pref["strategy"]=strategy;b.ActiveStrategy=strategy;b.Live=true;
-  b.Settings("all","444","555","any",true);check(b.Live&&b.Starts==1&&b.Game()["tcp"]=="444","saving settings restarts live process with new ports");
+  b.Settings("all","444","555","any");check(b.Live&&b.Starts==1&&b.Game()["tcp"]=="444","saving settings restarts live process with new ports");
   b.SaveList("list-general-user.txt","first.example\n");check(b.Starts==2&&b.Live,"saving lists restarts live process");
   int unchangedStarts=b.Starts;reject(()=>b.SaveList("list-general.txt","^dns.google\nhttps://bad.example/a\n"),"bad domain is rejected before stopping active engine");check(b.Live&&b.Starts==unchangedStarts,"validation failure leaves active process running");
   b.ReplaceFake("ACTIVE_DISCORD_UDP.bin","stun.bin");check(b.Starts==3,"packet changes restart process");
   string original=File.ReadAllText(b.P("lists/list-general-user.txt"));b.FailNext=true;reject(()=>b.SaveList("list-general-user.txt","bad.example\n"),"failed process restart reports rollback");check(b.Live&&File.ReadAllText(b.P("lists/list-general-user.txt"))==original,"process rollback restores exact previous file and running state");
   b.FailNext=true;reject(()=>b.SelectStrategy(b.Strategies[1]),"failed strategy switch rolls back");check(b.Get("strategy")==strategy&&b.ActiveStrategy==strategy&&b.Live,"strategy preference and active strategy restored");
   b.Live=false;int starts=b.Starts;b.SaveList("list-general-user.txt","stopped.example\n");check(!b.Live&&b.Starts==starts,"stopped process stays stopped");
-  b.State=4;b.Settings("tcp","443","555","none",true);check(b.State==4&&!b.Live&&b.Installs==1&&b.Command.Contains("443"),"running service reconfigured and restarted");
+  b.State=4;b.Settings("tcp","443","555","none");check(b.State==4&&!b.Live&&b.Installs==1&&b.Command.Contains("443"),"running service reconfigured and restarted");
   string command=b.Command,marker=b.Marker;original=File.ReadAllText(b.P("lists/list-general-user.txt"));b.FailNext=true;
   reject(()=>b.SaveList("list-general-user.txt","service-fail.example\n"),"failed service restart reports rollback");check(b.State==4&&b.Command==command&&b.Marker==marker&&File.ReadAllText(b.P("lists/list-general-user.txt"))==original,"service rollback restores command marker content and running state");
   b.State=1;b.SelectStrategy(b.Strategies[1]);check(b.State==1&&!b.Live,"stopped service receives config without starting");

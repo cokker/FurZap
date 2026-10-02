@@ -6,11 +6,28 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Reflection;
 
 namespace FurZap {
 public sealed class TelegramProxyRelease {public string Version,Url,Digest;public long Size;}
 public static class TelegramProxyUpdater {
  const string Api="https://api.github.com/repos/Flowseal/tg-ws-proxy/releases/latest";
+ const string EmbeddedName="FurZap.TgWsProxy.exe";
+ const string EmbeddedDigest="b51436e8960307316135e64ac14753b1f3b0e7a46afe1bd6081353b82de20f09";
+ const long EmbeddedSize=21330255;
+ public static bool HasEmbedded{get{return Assembly.GetExecutingAssembly().GetManifestResourceInfo(EmbeddedName)!=null;}}
+ public static string ExtractEmbedded(string data){
+  string dir=Path.Combine(data,"tools"),target=Path.Combine(dir,"TgWsProxy_windows.exe");
+  if(File.Exists(target))return target;
+  Directory.CreateDirectory(dir);string temp=Path.Combine(dir,"TgWsProxy-"+Guid.NewGuid().ToString("N")+".download");
+  try{using(var input=Assembly.GetExecutingAssembly().GetManifestResourceStream(EmbeddedName)){
+   if(input==null)throw new Exception("В FurZap.exe нет встроенного TG WS Proxy. Установи полный ZIP или скачай прокси в разделе Инструменты.");
+   using(var output=File.Create(temp))input.CopyTo(output);
+  }
+   if(new FileInfo(temp).Length!=EmbeddedSize||!String.Equals(AppUpdater.FileHash(temp),EmbeddedDigest,StringComparison.OrdinalIgnoreCase))throw new Exception("Встроенный TG WS Proxy не прошёл проверку целостности.");
+   if(File.Exists(target))return target;File.Move(temp,target);return target;
+  }finally{if(File.Exists(temp))File.Delete(temp);}
+ }
  public static TelegramProxyRelease Parse(string json){
   var root=ReleaseJson.Parse(json);if((bool)root["draft"]||(bool)root["prerelease"])throw new Exception("Ожидается опубликованный релиз TG WS Proxy.");
   string version=(string)root["tag_name"];if(!Regex.IsMatch(version,@"^v\d+(\.\d+){1,3}$"))throw new Exception("Неизвестная версия TG WS Proxy.");
@@ -44,12 +61,13 @@ public sealed class TelegramProxyManager {
  public string Bundled{get{return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tools","TgWsProxy_windows.exe");}}
  public string Installed{get{return Path.Combine(backend.Data,"tools","TgWsProxy_windows.exe");}}
  public string Executable{get{return File.Exists(Installed)?Installed:File.Exists(Bundled)?Bundled:null;}}
+ public bool Available{get{return Executable!=null||TelegramProxyUpdater.HasEmbedded;}}
  public bool Running{get{try{return owned!=null&&!owned.HasExited;}catch{return false;}}}
  public void Start(){
   if(backend.Preview)throw new Exception("Запуск доступен только в Windows.");
   if(Running)throw new Exception("TG WS Proxy уже запущен из FurZap.");
   if(Process.GetProcessesByName("TgWsProxy_windows").Length>0)throw new Exception("TG WS Proxy уже работает. Найди его значок в системном трее.");
-  string file=Executable;if(file==null)throw new Exception("TG WS Proxy пока не установлен. Сначала нажми «Скачать / обновить».");
+  string file=Executable??TelegramProxyUpdater.ExtractEmbedded(backend.Data);
   owned=Process.Start(new ProcessStartInfo(file){UseShellExecute=true,WorkingDirectory=Path.GetDirectoryName(file)});
   if(owned==null)throw new Exception("Windows не запустила TG WS Proxy.");
   System.Threading.Thread.Sleep(800);if(!Running)throw new Exception("TG WS Proxy завершился сразу после запуска. Проверь его журнал в трее или папке программы.");

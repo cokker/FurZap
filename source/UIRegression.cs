@@ -13,15 +13,18 @@ public partial class MainForm {
   check(cards.Zip(cards.Skip(1),(a,b)=>a.Bottom<=b.Top).All(x=>x),"Tools cards do not overlap at "+UiZoom+"x");
   var telegram=cards.FirstOrDefault(c=>c.Controls.OfType<Label>().Any(l=>l.Text=="Telegram · TG WS Proxy"));
   check(telegram!=null&&telegram.Top<cards[2].Top,"Telegram proxy appears near top of Tools");
+  var engine=cards.FirstOrDefault(c=>c.Controls.OfType<Label>().Any(l=>l.Text=="Движок и восстановление"));
+  check(engine!=null&&engine.Controls.OfType<FToggle>().Any(t=>t.Text=="Проверять обновления движка при открытии"),"engine update check is in engine tools card");
   Refresh();Screenshot(file);
  }
  internal void VerifyEditorUi(Action<bool,string> check){
   foreach(string section in new[]{"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Проверки","Профили","Журнал"}){Navigate(section);check(Opacity==1,"window stays opaque on "+section);AnimateFrame(Motion.Now+.08);check(Opacity==1,"window stays opaque during animation on "+section);}
   Navigate("Инструменты");check(Page.Controls.OfType<Card>().Any(c=>c.Controls.OfType<FButton>().Any(b=>b.Text=="Скачать / обновить")),"Telegram proxy controls visible in Tools");
+  Navigate("Настройки");check(!Page.Controls.OfType<Card>().SelectMany(c=>c.Controls.OfType<FToggle>()).Any(t=>t.Text=="Проверять обновления движка при открытии"),"engine update check removed from game settings");var settingsCards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();check(settingsCards.Zip(settingsCards.Skip(1),(a,b)=>a.Bottom<=b.Top).All(x=>x),"settings cards remain separated after moving update toggle");
   Navigate("Списки");check(!Dirty,"list is clean after navigation and layout");var edit=ListEditor;string original=edit.Text;edit.Font=new Font("Consolas",14);edit.SelectAll();edit.SelectionColor=Color.White;edit.Select(0,0);RenderPageScale();check(!Dirty,"font/format/scale do not dirty the list");
   edit.Focus();edit.SelectionStart=edit.TextLength;edit.SelectedText="\nnew.example";check(Dirty,"typing creates unsaved changes");edit.Undo();check(!Dirty,"undo returns to saved state");
   edit.Text=original+"\nchanged.example";check(Dirty,"programmatic content difference detected");edit.Text=original;check(!Dirty,"restoring exact text clears dirty state");
-  Navigate("Главная");check(Subtitle.Text=="Главная","can leave unchanged list without a prompt");Navigate("Списки");var combo=Page.Controls.OfType<FCombo>().First();combo.SelectedIndex=3;check(!Dirty,"switching loaded files does not dirty editor");Navigate("Настройки");
+  Navigate("Главная");check(Subtitle.Text=="Главная","can leave unchanged list without a prompt");check(HomeProxyButton!=null&&HomeProxyButton.Text=="Запустить TG WS Proxy","home has one-click Telegram proxy launch");Navigate("Списки");var combo=Page.Controls.OfType<FCombo>().First();combo.SelectedIndex=3;check(!Dirty,"switching loaded files does not dirty editor");Navigate("Настройки");
  }
  internal void VerifyPopupUi(int iteration,Action<bool,string> check){
   var appearance=Page.Controls.OfType<Card>().First(c=>c.Controls.OfType<FButton>().Any(b=>b.Text=="Применить оформление"));var combos=appearance.Controls.OfType<FCombo>().ToArray();

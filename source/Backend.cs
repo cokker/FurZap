@@ -38,16 +38,17 @@ public partial class Backend {
  }
  public Dictionary<string,string> Game(){var d=new Dictionary<string,string>{{"mode","disabled"},{"tcp","1024-65535"},{"udp","1024-65535"}}; if(File.Exists(P("utils/game_filter.enabled")))foreach(string l in File.ReadAllLines(P("utils/game_filter.enabled"))){var v=l.Split(new char[] {'='});if(v.Length==2&&d.ContainsKey(v[0]))d[v[0]]=v[1];else if(v.Length==1&&new[]{"all","tcp","udp"}.Contains(l))d["mode"]=l;}return d;}
  public string IpMode(){string s=File.ReadAllText(P("lists/ipset-all.txt"));return String.IsNullOrWhiteSpace(s)?"any":s.Contains("203.0.113.113/32")?"none":"loaded";}
- public void Settings(string mode,string tcp,string udp,string ipmode,bool update){ApplyChange("Сохранение конфигурации",()=>SettingsCore(mode,tcp,udp,ipmode,update));}
- void SettingsCore(string mode,string tcp,string udp,string ipmode,bool update){
+ public void Settings(string mode,string tcp,string udp,string ipmode){ApplyChange("Сохранение конфигурации",()=>SettingsCore(mode,tcp,udp,ipmode));}
+ void SettingsCore(string mode,string tcp,string udp,string ipmode){
   tcp=Ports(tcp);udp=Ports(udp);if(!new[]{"disabled","all","tcp","udp"}.Contains(mode))throw new Exception("Неизвестный режим.");
   string file=P("lists/ipset-all.txt"), bak=file+".backup", old=IpMode();
   if(ipmode=="loaded"&&old!="loaded"&&!File.Exists(bak))throw new Exception("Нет сохранённого IPSet. Сначала обнови список на странице Инструменты.");
   Checkpoint("Настройки портов и IPSet");Backup(P("utils/game_filter.enabled"));Atomic(P("utils/game_filter.enabled"),"mode="+mode+"\r\ntcp="+tcp+"\r\nudp="+udp+"\r\n");
   if(old!=ipmode){Backup(file);if(old=="loaded")File.Copy(file,bak,true);if(ipmode=="loaded")Atomic(file,File.ReadAllText(bak));else Atomic(file,ipmode=="none"?"203.0.113.113/32\r\n":"");}
-  if(update)Atomic(P("utils/check_updates.enabled"),"enabled\r\n");else if(File.Exists(P("utils/check_updates.enabled")))File.Delete(P("utils/check_updates.enabled"));
   Log("Файлы настроек сохранены.");
  }
+ public bool CheckEngineUpdates{get{return File.Exists(P("utils/check_updates.enabled"));}}
+ public void SetEngineUpdateCheck(bool enabled){string path=P("utils/check_updates.enabled");if(enabled)Atomic(path,"enabled\r\n");else if(File.Exists(path))File.Delete(path);Log("Проверка обновлений движка при открытии "+(enabled?"включена":"выключена")+".");}
  public void EnsureLists(){foreach(string name in new[]{"list-general-user.txt","list-exclude-user.txt","ipset-exclude-user.txt"}){string p=P("lists/"+name);if(!File.Exists(p))Atomic(p,name.StartsWith("ipset")?"203.0.113.113/32\r\n":"domain.example.abc\r\n");}}
  public string Arguments(string strategy){
   if(!Strategies.Contains(strategy))throw new Exception("Стратегия отсутствует в этой сборке.");

@@ -40,6 +40,7 @@ public partial class MainForm {
   check(HomeProxyStart.Bottom<HeroBox.Height&&HomeProxyStop.Bottom<HeroBox.Height,"Telegram proxy actions fit inside the home hero");
   check(HomeProxyStatus!=null&&HomeTgDetails!=null&&HomeConnectButton!=null&&HomeConnectButton.Text=="Подключить Telegram","home shows proxy state and quick Telegram connection");
   check(HomeConnectButton.Top>=HomeTgDetails.Bottom&&HomeConnectButton.Left<=23*RenderZoom&&HomeConnectButton.Right>=HomeConnectButton.Parent.Width-25*RenderZoom,"Telegram connection is a full row below home controls");
+  check(HomeConnectButton.Enabled,"Telegram quick connect can start a stopped proxy");
   var cards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();
   check(cards.Zip(cards.Skip(1),(a,b)=>a.Bottom<=b.Top||a.Right<=b.Left).All(x=>x),"home cards do not overlap");
  }

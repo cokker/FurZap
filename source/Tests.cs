@@ -17,7 +17,7 @@ public static class Tests {
    var b=new Backend(copy,true);Check(b.Strategies.Length>=20,"all supplied strategies discovered");
    string appCache=Path.Combine(b.Data,"updates",Guid.NewGuid().ToString("N"),"FurZap.exe");Directory.CreateDirectory(Path.GetDirectoryName(appCache));File.Copy(System.Windows.Forms.Application.ExecutablePath,appCache);
    var appRelease=new AppRelease{Version=typeof(Tests).Assembly.GetName().Version,Size=new FileInfo(appCache).Length,Digest=AppUpdater.FileHash(appCache)};
-   Check(AppUpdater.FindDownloaded(appRelease,b.Data)==appCache,"completed FurZap update survives restart and is validated before reuse");
+   Check(String.Equals(AppUpdater.FindDownloaded(appRelease,b.Data),Path.GetFullPath(appCache),StringComparison.OrdinalIgnoreCase),"completed FurZap update survives restart and is validated before reuse");
    using(var stream=new FileStream(appCache,FileMode.Append))stream.WriteByte(0);
    Check(AppUpdater.FindDownloaded(appRelease,b.Data)==null,"modified FurZap cache is rejected");
    Check(TelegramProxyUpdater.HasEmbedded,"official TG WS Proxy is embedded in FurZap.exe");string embedded=TelegramProxyUpdater.ExtractEmbedded(temp);Check(new FileInfo(embedded).Length==21330255&&AppUpdater.FileHash(embedded)=="b51436e8960307316135e64ac14753b1f3b0e7a46afe1bd6081353b82de20f09","embedded proxy extracts with verified official bytes");

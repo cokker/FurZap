@@ -30,7 +30,7 @@ public class FButton:Control {
  protected override void Dispose(bool disposing){if(disposing)Motion.Frame-=Animate;base.Dispose(disposing);}
 }
 public class FProgressBar:Control {
- int value;
+ int value=0;
  public int Value{get{return value;}set{value=Math.Max(0,Math.Min(100,value));Invalidate();}}
  public FProgressBar(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);Height=13;Visible=false;AccessibleName="Ход загрузки обновления";}
  protected override void OnPaint(PaintEventArgs e){

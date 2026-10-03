@@ -77,7 +77,7 @@ public partial class MainForm {
   check(card.Controls.Count>=8,"update settings, status and actions present");
   var toggles=new System.Collections.Generic.List<FToggle>();foreach(Control c in card.Controls)if(c is FToggle)toggles.Add((FToggle)c);
   check(toggles.Count==2,"app checking and downloading have separate toggles");
-  check(AppDownloadBar!=null&&!AppDownloadBar.Visible,"app progress bar begins hidden");SetAppProgress(50,true);check(AppDownloadBar.Visible&&AppDownloadBar.Value==50,"app progress bar shows percentage");SetAppProgress(0,false);
+  check(AppDownloadBar!=null&&!AppDownloadBar.Visible,"app progress bar begins hidden");SetAppProgress(50,true);Screenshot(Path.Combine(dir,"progress-visible.png"));check(AppDownloadBar.Visible&&AppDownloadBar.Value==50,"app progress bar shows percentage (visible="+AppDownloadBar.Visible+", value="+AppDownloadBar.Value+", parent="+AppDownloadBar.Parent.Visible+", page="+Page.Visible+")");SetAppProgress(0,false);
   foreach(var toggle in toggles){bool value=toggle.Checked;toggle.Checked=!value;toggle.Checked=value;}
   check(B.Get("app-update-check")=="yes"&&B.Get("app-update-download")=="yes","app update preferences persist");
   SetUpdateStatus("Test progress 50%");check(UpdateStatus.Text=="Test progress 50%","download progress reaches status label");

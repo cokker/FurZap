@@ -28,6 +28,7 @@ public static class ComfortTests {
   string proxyDir=Path.Combine(Path.GetTempPath(),"furzap-proxy-test");string installed=Path.Combine(proxyDir,"data","tools","TgWsProxy_windows.exe"),bundled=Path.Combine(proxyDir,"tools","TgWsProxy_windows.exe");
   check(TelegramProxyManager.ManagedPath(Path.Combine(proxyDir,"data","tools","..","tools","TgWsProxy_windows.exe"),installed,bundled),"proxy can be rediscovered from its actual installed path");
   check(!TelegramProxyManager.ManagedPath(Path.Combine(proxyDir,"data","tools-other","TgWsProxy_windows.exe"),installed,bundled),"proxy stop does not target a different program directory");
+  check(TelegramAutostart.Command(Path.Combine(proxyDir,"tools","TgWsProxy_windows.exe"))==Backend.Quote(Path.GetFullPath(bundled)),"Telegram autostart quotes exact executable path");
   var connection=TelegramProxyManager.ParseConnection("{\"host\":\"0.0.0.0\",\"port\":1443,\"secret\":\"0123456789abcdef0123456789abcdef\"}");
   check(connection.Host=="127.0.0.1"&&connection.Link=="tg://proxy?server=127.0.0.1&port=1443&secret=dd0123456789abcdef0123456789abcdef","Telegram quick connect builds local MTProto link");
   reject(()=>TelegramProxyManager.ParseConnection("{\"host\":\"evil.example\",\"port\":1443,\"secret\":\"wrong\"}"),"Telegram connection rejects invalid secret");

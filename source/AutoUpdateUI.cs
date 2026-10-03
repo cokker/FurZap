@@ -15,19 +15,24 @@ public partial class MainForm {
   UpdateBadge=new FButton{Text="Обновление FurZap",Bounds=new Rectangle(Math.Max(310,top.Width-305),47,275,28),Anchor=AnchorStyles.Top|AnchorStyles.Right,Visible=false};
   UpdateBadge.Click+=(s,e)=>{if(!Busy&&!UpdatingApp)Navigate("Обновления");};top.Controls.Add(UpdateBadge);
   UpdatePoll=new System.Windows.Forms.Timer{Interval=3600000};
-  UpdatePoll.Tick+=(s,e)=>{if(B.Get("app-update-check","yes")=="yes")CheckAppUpdate(true);};
-  Shown+=(s,e)=>{if(!B.Preview){UpdatePoll.Start();if(B.Get("app-update-check","yes")=="yes")CheckAppUpdate(true);}};
+  UpdatePoll.Tick+=(s,e)=>CheckEnabledUpdates();
+  Shown+=(s,e)=>{if(!B.Preview){UpdatePoll.Start();CheckEnabledUpdates();}};
   Disposed+=(s,e)=>{UpdatePoll.Dispose();if(UpdateCancel!=null)UpdateCancel.Cancel();};
+ }
+ void CheckEnabledUpdates(){
+  if(B.Get("app-update-check","yes")=="yes")CheckAppUpdate(true);
+  if(B.CheckEngineUpdates)CheckEngineUpdate(true);
+  if(B.Get("tg-update-check","yes")=="yes")CheckTelegramUpdate(true);
  }
  void SetUpdateStatus(string message){UpdateMessage=message;if(UpdateStatus!=null&&!UpdateStatus.IsDisposed)UpdateStatus.Text=message;}
  void UpdateCard(){
-  var c=Box(150,260);Title(c,"FurZap · версия "+typeof(MainForm).Assembly.GetName().Version.ToString(3),"Оболочка загружается с GitHub. Установка — после твоего подтверждения.");
+  var c=Box(177,270);Title(c,"FurZap · версия "+typeof(MainForm).Assembly.GetName().Version.ToString(3),"Оболочка загружается с GitHub. Установка — после твоего подтверждения.");
   Check(c,"Проверять обновления FurZap при запуске и каждый час",23,85,B.Get("app-update-check","yes")=="yes",v=>{B.Pref["app-update-check"]=v?"yes":"no";B.SavePrefs();});
   Check(c,"Автоматически скачивать новую версию FurZap",23,123,B.Get("app-update-download","yes")=="yes",v=>{B.Pref["app-update-download"]=v?"yes":"no";B.SavePrefs();});
   UpdateStatus=L(c,UpdateMessage,23,161,c.Width-46,32,9);UpdateStatus.ForeColor=Theme.Muted;
-  Btn(c,"Проверить / установить",23,208,260,36,CheckAppUpdate,true);
-  Btn(c,"Отменить загрузку",298,208,190,36,()=>{if(UpdateCancel!=null)UpdateCancel.Cancel();});
-  Btn(c,"Вернуть FurZap",500,208,210,36,RollbackApp);
+  Btn(c,"Проверить / установить",23,216,260,36,CheckAppUpdate,true);
+  Btn(c,"Отменить загрузку",298,216,190,36,()=>{if(UpdateCancel!=null)UpdateCancel.Cancel();});
+  Btn(c,"Вернуть FurZap",500,216,210,36,RollbackApp);
  }
  void CheckAppUpdate(){CheckAppUpdate(false);}
  async void CheckAppUpdate(bool automatic){

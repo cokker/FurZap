@@ -49,6 +49,16 @@ public static class EngineUpdater {
    if(roots.Length!=1)throw new Exception("Не удалось определить папку движка.");Validate(roots[0]);Backend.Atomic(Path.Combine(roots[0],".furzap-version"),release.Version);return roots[0];
   }catch{Directory.Delete(dir,true);token.ThrowIfCancellationRequested();throw;}
  }
+ public static string FindPrepared(Backend b,EngineRelease release){
+  string dir=Path.Combine(b.Data,"engine-downloads");if(!Directory.Exists(dir))return null;
+  foreach(string folder in Directory.GetDirectories(dir).OrderByDescending(Directory.GetLastWriteTimeUtc)){
+   string zip=Path.Combine(folder,"engine.zip"),unpack=Path.Combine(folder,"unpacked");
+   if(!File.Exists(zip)||new FileInfo(zip).Length!=release.Size||!String.Equals(AppUpdater.FileHash(zip),release.Digest,StringComparison.OrdinalIgnoreCase)||!Directory.Exists(unpack))continue;
+   string[] roots=Directory.GetFiles(unpack,".furzap-version",SearchOption.AllDirectories).Where(p=>File.ReadAllText(p).Trim()==release.Version).Select(Path.GetDirectoryName).ToArray();
+   if(roots.Length==1){try{Validate(roots[0]);return roots[0];}catch(Exception){}}
+  }
+  return null;
+ }
  public static void Validate(string root){
   foreach(string rel in new[]{"bin/winws.exe","bin/WinDivert.dll","bin/WinDivert64.sys","bin/cygwin1.dll","lists/ipset-all.txt","service.bat"})if(!File.Exists(Path.Combine(root,rel)))throw new Exception("В комплекте движка отсутствует "+rel);
   var candidate=new Backend(root,true);if(candidate.Strategies.Length==0)throw new Exception("В архиве нет стратегий.");foreach(string strategy in candidate.Strategies)candidate.Arguments(strategy);

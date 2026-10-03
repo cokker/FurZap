@@ -7,22 +7,47 @@ using System.Windows.Forms;
 namespace FurZap {
 public partial class MainForm {
  Label TgUpdateStatus;CancellationTokenSource TgUpdateCancel;bool TgUpdating;
+ TelegramProxyRelease PendingTgRelease;string PendingTgFile;
  string TgUpdateMessage="Обновления TG WS Proxy ещё не проверялись.";
  void UpdatesPage(){
-  var intro=Box(22,112);Title(intro,"Центр обновлений","FurZap, Zapret и TG WS Proxy обновляются независимо. Установка каждого требует твоего решения.");
-  Btn(intro,"Проверить все версии",23,67,258,34,CheckAllUpdates,true);
+  var intro=Box(22,139);Title(intro,"Центр обновлений","FurZap, Zapret и TG WS Proxy обновляются независимо. Установка каждого требует твоего решения.");
+  Btn(intro,"Проверить все версии",23,88,258,37,CheckAllUpdates,true);
   UpdateCard();MaintenanceCard();
-  var tg=Box(702,195);Title(tg,"TG WS Proxy · "+TelegramProxyUpdater.InstalledVersion(TgProxy.Executable,B.Data),"Официальная сборка Flowseal. Останови прокси перед установкой новой версии.");
-  TgUpdateStatus=L(tg,TgUpdateMessage,23,82,tg.Width-46,36,9);TgUpdateStatus.ForeColor=Theme.Muted;
-  Btn(tg,"Проверить / обновить",23,137,240,36,UpdateTelegram,true);
-  Btn(tg,"Отменить загрузку",278,137,215,36,()=>{if(TgUpdateCancel!=null)TgUpdateCancel.Cancel();});
-  Btn(tg,"Открыть Telegram",506,137,210,36,ConnectTelegram);
-  var lists=Box(913,137);Title(lists,"Списки IPSet","Текущий режим IPSet сохраняется при обновлении списков Flowseal.");
+  var tg=Box(768,270);Title(tg,"TG WS Proxy · "+TelegramProxyUpdater.InstalledVersion(TgProxy.Executable,B.Data),"Официальная сборка Flowseal. Для установки останови прокси; загрузка не прерывает его работу.");
+  TgUpdateStatus=L(tg,TgUpdateMessage,23,82,tg.Width-46,25,9);TgUpdateStatus.ForeColor=Theme.Muted;
+  Check(tg,"Проверять обновления TG WS Proxy при запуске и каждый час",23,112,B.Get("tg-update-check","yes")=="yes",v=>{B.Pref["tg-update-check"]=v?"yes":"no";B.SavePrefs();});
+  Check(tg,"Автоматически скачивать новую версию TG WS Proxy",23,150,B.Get("tg-update-download","no")=="yes",v=>{B.Pref["tg-update-download"]=v?"yes":"no";B.SavePrefs();});
+  Btn(tg,"Проверить / установить",23,211,240,36,UpdateTelegram,true);
+  Btn(tg,"Отменить загрузку",278,211,215,36,()=>{if(TgUpdateCancel!=null)TgUpdateCancel.Cancel();});
+  Btn(tg,"Открыть Telegram",506,211,210,36,ConnectTelegram);
+  var lists=Box(1056,137);Title(lists,"Списки IPSet","Текущий режим IPSet сохраняется при обновлении списков Flowseal.");
   Btn(lists,"Обновить IPSet",23,84,235,37,()=>Work(()=>B.UpdateIps()),true);
   Btn(lists,"История обновлений",273,84,235,37,()=>TextDialog("История обновлений",B.UpdateHistory(),false,null));
-  L(Page,"Проверка версии не меняет файлы. При установке FurZap и движка сохраняются копии для возврата.",33,1070,900,42,9).ForeColor=Theme.Muted;
+  L(Page,"Проверка версии не меняет файлы. Загрузка не устанавливает обновление без подтверждения.",33,1210,900,42,9).ForeColor=Theme.Muted;
  }
  void SetTgUpdateStatus(string message){TgUpdateMessage=message;if(TgUpdateStatus!=null&&!TgUpdateStatus.IsDisposed)TgUpdateStatus.Text=message;}
+ async void CheckTelegramUpdate(bool automatic){
+  if(B.Preview||Busy||TgUpdating||(!automatic&&(UpdatingApp||EngineUpdating)))return;
+  TgUpdating=true;SetTgUpdateStatus("Проверяю TG WS Proxy…");
+  try{
+   var release=await Task.Run(()=>TelegramProxyUpdater.Latest(B));if(IsDisposed||Disposing)return;
+   string installed=TgProxy.Executable;
+   if(installed!=null&&TelegramProxyUpdater.Matches(installed,release)){SetTgUpdateStatus("TG WS Proxy "+release.Version+" · актуальная версия");return;}
+   if(PendingTgRelease==null||PendingTgRelease.Version!=release.Version)PendingTgFile=null;
+   PendingTgRelease=release;
+   SetTgUpdateStatus("Доступна TG WS Proxy "+release.Version+" · установлена "+TelegramProxyUpdater.InstalledVersion(installed,B.Data));
+   if(!automatic||B.Get("tg-update-download","no")!="yes")return;
+   string cached=TelegramProxyUpdater.StagedPath(B,release);
+   if(TelegramProxyUpdater.Matches(cached,release)){PendingTgFile=cached;SetTgUpdateStatus("TG WS Proxy "+release.Version+" скачан. Установка — по кнопке.");return;}
+   using(var cancel=new CancellationTokenSource()){
+    TgUpdateCancel=cancel;
+    PendingTgFile=await Task.Run(()=>TelegramProxyUpdater.Stage(B,release,cancel.Token,p=>UI(()=>SetTgUpdateStatus("Загрузка TG WS Proxy · "+p+"%"))));
+   }
+   if(!IsDisposed&&!Disposing)SetTgUpdateStatus("TG WS Proxy "+release.Version+" скачан. Установка — по кнопке.");
+  }catch(OperationCanceledException){SetTgUpdateStatus("Загрузка TG WS Proxy отменена.");}
+  catch(Exception ex){Log("Проверка TG WS Proxy: "+ex.Message);SetTgUpdateStatus("Не удалось проверить TG WS Proxy: "+ex.Message);if(!automatic)Error(ex);}
+  finally{TgUpdateCancel=null;TgUpdating=false;}
+ }
  async void CheckAllUpdates(){
   if(B.Preview||Busy||UpdatingApp||EngineUpdating||TgUpdating)return;
   Busy=true;Page.Enabled=false;SetUpdateStatus("Проверяю FurZap…");if(EngineStatus!=null)EngineStatus.Text="Проверяю Zapret…";SetTgUpdateStatus("Проверяю TG WS Proxy…");
@@ -47,13 +72,17 @@ public partial class MainForm {
   if(TgProxy.Running){Feedback("Прокси работает","Сначала останови TG WS Proxy, затем обнови его.");return;}
   TgUpdating=true;Busy=true;SetTgUpdateStatus("Проверяю TG WS Proxy…");RefreshPetActivity();
   try{
-   var release=await Task.Run(()=>TelegramProxyUpdater.Latest(B));
+   var release=PendingTgRelease??await Task.Run(()=>TelegramProxyUpdater.Latest(B));
    if(TgProxy.Executable!=null&&TelegramProxyUpdater.Matches(TgProxy.Executable,release)){SetTgUpdateStatus("TG WS Proxy "+release.Version+" · актуальная версия");return;}
-   if(!Confirm("Установить TG WS Proxy "+release.Version+" из официального релиза Flowseal? Сначала прокси должен быть остановлен."))return;
+   if(!Confirm("Установить TG WS Proxy "+release.Version+" из официального релиза Flowseal? Работающий прокси должен быть остановлен."))return;
    using(var cancel=new CancellationTokenSource()){
     TgUpdateCancel=cancel;
-    await Task.Run(()=>TelegramProxyUpdater.Download(B,release,cancel.Token,p=>UI(()=>SetTgUpdateStatus("Загрузка TG WS Proxy · "+p+"%"))));
+    string cached=PendingTgFile??TelegramProxyUpdater.StagedPath(B,release);
+    string staged=TelegramProxyUpdater.Matches(cached,release)?cached:await Task.Run(()=>TelegramProxyUpdater.Stage(B,release,cancel.Token,p=>UI(()=>SetTgUpdateStatus("Загрузка TG WS Proxy · "+p+"%"))));
+    cancel.Token.ThrowIfCancellationRequested();
+    await Task.Run(()=>TelegramProxyUpdater.InstallStaged(B,release,staged));
    }
+   PendingTgFile=null;PendingTgRelease=null;
    SetTgUpdateStatus("TG WS Proxy "+release.Version+" установлен. Запусти его на главной.");Feedback("Прокси обновлён","TG WS Proxy "+release.Version+" готов к запуску.");
   }catch(OperationCanceledException){SetTgUpdateStatus("Загрузка TG WS Proxy отменена.");}
   catch(Exception ex){SetTgUpdateStatus("Не удалось обновить TG WS Proxy: "+ex.Message);Error(ex);}

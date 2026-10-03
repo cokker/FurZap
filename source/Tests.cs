@@ -24,6 +24,10 @@ public static class Tests {
     reopened.Stop();
     Check(!reopened.Running&&fixtureProcess.WaitForExit(1000),"Stop closes a previously launched proxy process");
    }finally{if(fixtureProcess!=null){if(!fixtureProcess.HasExited)fixtureProcess.Kill();fixtureProcess.Dispose();}File.Delete(fixture);}
+   string staged=Path.Combine(b.Data,"tg-downloads","9.0","TgWsProxy_windows.exe");Directory.CreateDirectory(Path.GetDirectoryName(staged));File.Copy(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"ping.exe"),staged);
+   var stagedRelease=new TelegramProxyRelease{Version="9.0",Size=new FileInfo(staged).Length,Digest=AppUpdater.FileHash(staged)};
+   TelegramProxyUpdater.InstallStaged(b,stagedRelease,staged);Check(TelegramProxyUpdater.Matches(fixture,stagedRelease),"downloaded Telegram proxy installs only after explicit apply");
+   stagedRelease.Digest=new string('0',64);Reject(()=>TelegramProxyUpdater.InstallStaged(b,stagedRelease,staged),"tampered Telegram proxy cannot replace installed version");File.Delete(fixture);
    foreach(string strategy in b.Strategies){string a=b.Arguments(strategy);Check(a.StartsWith("--wf-tcp=")&&!a.Contains("%")&&!a.Contains("^")&&!a.Contains("\n"),"parse "+strategy);Check(a.Contains("--new")&&a.Contains("--filter-"),"profiles retained: "+strategy);}
    Check(Backend.Ports("443, 1024-65535")=="443,1024-65535","port list normalization");foreach(string v in new[]{"0","65536","443-80","1&calc","-1","01","1,","","1-2-3"})Reject(()=>Backend.Ports(v),"invalid ports: "+v);
    Check(Backend.ValidIp("203.0.113.0/24")&&Backend.ValidIp("2001:db8::/32"),"valid IPv4 and IPv6 networks");foreach(string v in new[]{"999.1.2.3","1.2.3.4/33","1.2.3.4/-1","127.1","2001:db8::/129"})Check(!Backend.ValidIp(v),"invalid IP: "+v);

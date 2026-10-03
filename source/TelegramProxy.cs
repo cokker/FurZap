@@ -55,6 +55,28 @@ public static class TelegramProxyUpdater {
  }
  public static TelegramProxyRelease Latest(Backend b){return Parse(b.Download(Api));}
  public static bool Matches(string file,TelegramProxyRelease release){return File.Exists(file)&&new FileInfo(file).Length==release.Size&&String.Equals(AppUpdater.FileHash(file),release.Digest,StringComparison.OrdinalIgnoreCase);}
+ public static string Stage(Backend b,TelegramProxyRelease release,CancellationToken token,Action<int> progress){
+  string dir=Path.Combine(b.Data,"tg-downloads",release.Version),target=Path.Combine(dir,"TgWsProxy_windows.exe");
+  Directory.CreateDirectory(dir);if(Matches(target,release))return target;
+  string temp=Path.Combine(dir,Guid.NewGuid().ToString("N")+".download");
+  try{
+   ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;var request=(HttpWebRequest)WebRequest.Create(release.Url);request.UserAgent="FurZap/1.5";request.Timeout=20000;request.ReadWriteTimeout=20000;
+   using(token.Register(()=>request.Abort()))using(var response=request.GetResponse())using(var input=response.GetResponseStream())using(var output=File.Create(temp)){
+    byte[] bytes=new byte[65536];long total=0;int n;while((n=input.Read(bytes,0,bytes.Length))>0){token.ThrowIfCancellationRequested();total+=n;if(total>release.Size)throw new Exception("Размер TG WS Proxy превышен.");output.Write(bytes,0,n);progress((int)(total*100/release.Size));}
+   }
+   token.ThrowIfCancellationRequested();if(!Matches(temp,release))throw new Exception("Файл TG WS Proxy не прошёл проверку SHA-256.");
+   if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);return target;
+  }finally{if(File.Exists(temp))File.Delete(temp);}
+ }
+ public static string StagedPath(Backend b,TelegramProxyRelease release){return Path.Combine(b.Data,"tg-downloads",release.Version,"TgWsProxy_windows.exe");}
+ public static void InstallStaged(Backend b,TelegramProxyRelease release,string staged){
+  if(!Matches(staged,release))throw new Exception("Скачанный TG WS Proxy повреждён. Повтори загрузку.");
+  string dir=Path.Combine(b.Data,"tools"),target=Path.Combine(dir,"TgWsProxy_windows.exe");Directory.CreateDirectory(dir);
+  string temp=Path.Combine(dir,Guid.NewGuid().ToString("N")+".install");
+  try{File.Copy(staged,temp);if(!Matches(temp,release))throw new Exception("Проверка TG WS Proxy при установке не пройдена.");
+   if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);RecordVersion(b.Data,release.Version,release.Digest);
+  }finally{if(File.Exists(temp))File.Delete(temp);}
+ }
  public static string Download(Backend b,TelegramProxyRelease release,CancellationToken token,Action<int> progress){
   string dir=Path.Combine(b.Data,"tools");Directory.CreateDirectory(dir);string target=Path.Combine(dir,"TgWsProxy_windows.exe");
   if(Matches(target,release)){RecordVersion(b.Data,release.Version,release.Digest);return target;}

@@ -13,16 +13,21 @@ public partial class MainForm {
   check(cards.Zip(cards.Skip(1),(a,b)=>a.Bottom<=b.Top).All(x=>x),"Tools cards do not overlap at "+UiZoom+"x");
   var telegram=cards.FirstOrDefault(c=>c.Controls.OfType<Label>().Any(l=>l.Text=="Telegram · TG WS Proxy"));
   check(telegram!=null&&telegram.Top<cards[2].Top,"Telegram proxy appears near top of Tools");
-  Navigate("Обновления");var engine=Page.Controls.OfType<Card>().FirstOrDefault(c=>c.Controls.OfType<FToggle>().Any(t=>t.Text=="Проверять обновления движка при открытии"));
+  Navigate("Обновления");var engine=Page.Controls.OfType<Card>().FirstOrDefault(c=>c.Controls.OfType<FToggle>().Any(t=>t.Text=="Проверять обновления Zapret при запуске и каждый час"));
   check(engine!=null,"engine update check is in update center");
   check(Page.Controls.OfType<Card>().Count()>=5,"unified update center shows app, engine, proxy and IPSet");
-  Screenshot(Path.Combine(Path.GetDirectoryName(file),"updates.png"));Navigate("Инструменты");
+  var intro=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).First();var introDescription=intro.Controls.OfType<Label>().OrderBy(c=>c.Top).Last();var introButton=intro.Controls.OfType<FButton>().First();
+  check(introButton.Top>=introDescription.Bottom+8&&introButton.Bottom<=intro.Height-8,"update check button has its own row and remains fully visible");
+  var components=Page.Controls.OfType<Card>().Where(c=>c.Controls.OfType<FToggle>().Any()).ToArray();
+  check(components.Length==3&&components.All(c=>c.Controls.OfType<FToggle>().Count()==2),"all three components have check and download switches");
+  Refresh();Screenshot(Path.Combine(Path.GetDirectoryName(file),file.Contains("-200")?"updates-200.png":"updates.png"));Navigate("Инструменты");
   Refresh();Screenshot(file);
  }
  internal void VerifyEditorUi(Action<bool,string> check){
   foreach(string section in new[]{"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Обновления","Проверки","Профили","Журнал"}){Navigate(section);check(Opacity==1,"window stays opaque on "+section);AnimateFrame(Motion.Now+.08);check(Opacity==1,"window stays opaque during animation on "+section);}
   Navigate("Инструменты");check(Page.Controls.OfType<Card>().Any(c=>c.Controls.OfType<FButton>().Any(b=>b.Text=="Подключить Telegram")),"Telegram connection visible in Tools");
-  Navigate("Настройки");check(!Page.Controls.OfType<Card>().SelectMany(c=>c.Controls.OfType<FToggle>()).Any(t=>t.Text=="Проверять обновления движка при открытии"),"engine update check removed from game settings");var settingsCards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();check(settingsCards.Zip(settingsCards.Skip(1),(a,b)=>a.Bottom<=b.Top).All(x=>x),"settings cards remain separated after moving update toggle");
+  Navigate("Настройки");check(!Page.Controls.OfType<Card>().SelectMany(c=>c.Controls.OfType<FToggle>()).Any(t=>t.Text.StartsWith("Проверять обновления Zapret")),"engine update check removed from game settings");var settingsCards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();check(settingsCards.Zip(settingsCards.Skip(1),(a,b)=>a.Bottom<=b.Top).All(x=>x),"settings cards remain separated after moving update toggle");
+  Navigate("Служба");check(Page.Controls.OfType<Card>().Any(c=>c.Controls.OfType<FToggle>().Any(t=>t.Text=="Запускать TG WS Proxy вместе с Windows")),"Telegram autostart is in Service page");
   Navigate("Списки");check(!Dirty,"list is clean after navigation and layout");var edit=ListEditor;string original=edit.Text;edit.Font=new Font("Consolas",14);edit.SelectAll();edit.SelectionColor=Color.White;edit.Select(0,0);RenderPageScale();check(!Dirty,"font/format/scale do not dirty the list");
   edit.Focus();edit.SelectionStart=edit.TextLength;edit.SelectedText="\nnew.example";check(Dirty,"typing creates unsaved changes");edit.Undo();check(!Dirty,"undo returns to saved state");
   edit.Text=original+"\nchanged.example";check(Dirty,"programmatic content difference detected");edit.Text=original;check(!Dirty,"restoring exact text clears dirty state");

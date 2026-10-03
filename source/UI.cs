@@ -42,7 +42,7 @@ public partial class MainForm:Form {
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.6.0",27,75,170,22,9).ForeColor=Theme.Muted;
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.6.1",27,75,170,22,9).ForeColor=Theme.Muted;
   string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Обновления","Проверки","Профили","Журнал"};string[] icons={"\uE80F","\uE8F1","\uE9F3","\uE713","\uE8FD","\uE90F","\uE896","\uE9D9","\uE77B","\uE81C"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*40,178,38,()=>Navigate(n));Nav[i].NavIcon=icons[i];}
   SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");Side.Resize+=(s,e)=>UpdateSidebarPetVisibility();L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
@@ -214,6 +214,7 @@ public static class Program {
  [DllImport("user32.dll")]static extern bool SetProcessDPIAware();
  [STAThread] public static int Main(string[] args){
   if(args.Contains("--install-update"))return AppUpdater.Install(args);
+  if(args.Contains("--autostart-test")){try{FurZapAutostart.VerifyRegistration(Application.ExecutablePath);Console.WriteLine("PASS: Windows scheduled task registers, matches this EXE and is removed");return 0;}catch(Exception ex){Console.Error.WriteLine(ex);return 1;}}
   bool preview=args.Contains("--preview");string root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"engine");
   if(args.Contains("--engine-package-test")){try{var b=new Backend(root,false);var r=EngineUpdater.Latest(b);string path=EngineUpdater.Download(b,r,System.Threading.CancellationToken.None,p=>{});EngineUpdater.Validate(path);Console.WriteLine("PASS: official engine ZIP downloaded, verified, extracted and all strategies parsed: "+r.Version);return 0;}catch(Exception ex){Console.Error.WriteLine(ex);return 1;}}
   if(args.Contains("--self-test")){try{Tests.Run(root);return 0;}catch(Exception e){Console.Error.WriteLine(e);return 1;}}

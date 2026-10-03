@@ -29,21 +29,28 @@ public static class FurZapAutostart {
    return output;
   }
  }
- public static bool Enabled(string exe){
+ static bool Enabled(string exe,string name){
   if(Environment.OSVersion.Platform!=PlatformID.Win32NT)return false;
-  string xml=Schtasks("/Query /TN "+Backend.Quote(TaskName)+" /XML",true);if(String.IsNullOrWhiteSpace(xml))return false;
+  string xml=Schtasks("/Query /TN "+Backend.Quote(name)+" /XML",true);if(String.IsNullOrWhiteSpace(xml))return false;
   var document=new XmlDocument();document.LoadXml(xml);var ns=new XmlNamespaceManager(document.NameTable);ns.AddNamespace("t","http://schemas.microsoft.com/windows/2004/02/mit/task");
   var command=document.SelectSingleNode("//t:Actions/t:Exec/t:Command",ns);var arguments=document.SelectSingleNode("//t:Actions/t:Exec/t:Arguments",ns);
   return command!=null&&arguments!=null&&String.Equals(Path.GetFullPath(command.InnerText),Path.GetFullPath(exe),StringComparison.OrdinalIgnoreCase)&&arguments.InnerText=="--tray";
  }
- public static void Set(string exe,bool enabled){
+ public static bool Enabled(string exe){return Enabled(exe,TaskName);}
+ static void Set(string exe,bool enabled,string name){
   if(Environment.OSVersion.Platform!=PlatformID.Win32NT)throw new Exception("Автозапуск доступен только в Windows.");
-  if(!enabled){Schtasks("/Delete /TN "+Backend.Quote(TaskName)+" /F",true);return;}
+  if(!enabled){Schtasks("/Delete /TN "+Backend.Quote(name)+" /F",true);return;}
   string temp=Path.Combine(Path.GetTempPath(),"FurZap-task-"+Guid.NewGuid().ToString("N")+".xml");
   try{File.WriteAllText(temp,TaskXml(exe,WindowsIdentity.GetCurrent().User.Value),new System.Text.UTF8Encoding(false));
-   Schtasks("/Create /TN "+Backend.Quote(TaskName)+" /XML "+Backend.Quote(temp)+" /F",false);
-   if(!Enabled(exe))throw new Exception("Задание создано, но проверка пути FurZap не прошла.");
+   Schtasks("/Create /TN "+Backend.Quote(name)+" /XML "+Backend.Quote(temp)+" /F",false);
+   if(!Enabled(exe,name))throw new Exception("Задание создано, но проверка пути FurZap не прошла.");
   }finally{if(File.Exists(temp))File.Delete(temp);}
+ }
+ public static void Set(string exe,bool enabled){Set(exe,enabled,TaskName);}
+ public static void VerifyRegistration(string exe){
+  string name=TaskName+" test "+Guid.NewGuid().ToString("N");
+  try{Set(exe,true,name);if(!Enabled(exe,name))throw new Exception("Задание автозапуска отсутствует после регистрации.");}
+  finally{Set(exe,false,name);}
  }
  internal static string XmlForTest(string exe,string sid){return TaskXml(exe,sid);}
 }

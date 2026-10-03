@@ -42,6 +42,12 @@ jobs:
             *-tests.txt
             *-errors.txt
             verification/
+      - name: Verify Windows tray autostart registration
+        shell: pwsh
+        run: |
+          $p = Start-Process .\FurZap.exe -ArgumentList '--autostart-test' -Wait -PassThru -RedirectStandardOutput autostart-tests.txt -RedirectStandardError autostart-errors.txt
+          Get-Content autostart-tests.txt,autostart-errors.txt
+          if ($p.ExitCode -ne 0) { throw "Autostart registration failed: $($p.ExitCode)" }
       - name: Verify upstream engine download and archive
         shell: pwsh
         run: |

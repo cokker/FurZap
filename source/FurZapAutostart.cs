@@ -12,7 +12,7 @@ public static class FurZapAutostart {
   string path=SecurityElement.Escape(Path.GetFullPath(exe));
   string folder=SecurityElement.Escape(Path.GetDirectoryName(Path.GetFullPath(exe)));
   sid=SecurityElement.Escape(sid);
-  return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
+  return "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n"+
    "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">"+
    "<RegistrationInfo><Description>FurZap в трее при входе в Windows</Description></RegistrationInfo>"+
    "<Triggers><LogonTrigger><Enabled>true</Enabled><UserId>"+sid+"</UserId><Delay>PT15S</Delay></LogonTrigger></Triggers>"+
@@ -41,7 +41,7 @@ public static class FurZapAutostart {
   if(Environment.OSVersion.Platform!=PlatformID.Win32NT)throw new Exception("Автозапуск доступен только в Windows.");
   if(!enabled){Schtasks("/Delete /TN "+Backend.Quote(name)+" /F",true);return;}
   string temp=Path.Combine(Path.GetTempPath(),"FurZap-task-"+Guid.NewGuid().ToString("N")+".xml");
-  try{File.WriteAllText(temp,TaskXml(exe,WindowsIdentity.GetCurrent().User.Value),new System.Text.UTF8Encoding(false));
+  try{File.WriteAllText(temp,TaskXml(exe,WindowsIdentity.GetCurrent().User.Value),System.Text.Encoding.Unicode);
    Schtasks("/Create /TN "+Backend.Quote(name)+" /XML "+Backend.Quote(temp)+" /F",false);
    if(!Enabled(exe,name))throw new Exception("Задание создано, но проверка пути FurZap не прошла.");
   }finally{if(File.Exists(temp))File.Delete(temp);}

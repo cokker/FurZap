@@ -81,7 +81,7 @@ public partial class MainForm {
   using(var dialog=CreateAppUpdateDialog(new AppRelease{Version=new Version(1,5,2),Notes="# FurZap 1.5.2\n\n- Новое окно\n\n## Ранее в версии 1.5.1\n- Старая история"})){
    var updateCard=dialog.Controls.OfType<Card>().First();var changes=updateCard.Controls.OfType<RichTextBox>().First();
    check(dialog.ClientSize.Width<=700&&changes.Text.Contains("Новое окно")&&!changes.Text.Contains("Старая история"),"compact update dialog shows only latest notes");
-   dialog.Show(this);dialog.BringToFront();dialog.Refresh();Application.DoEvents();
+   dialog.Show(this);dialog.BringToFront();dialog.Refresh();
    using(var bmp=new Bitmap(dialog.ClientSize.Width,dialog.ClientSize.Height)){
     using(var graphics=Graphics.FromImage(bmp))graphics.CopyFromScreen(dialog.PointToScreen(Point.Empty),Point.Empty,bmp.Size);
     bmp.Save(Path.Combine(dir,"update-dialog.png"));

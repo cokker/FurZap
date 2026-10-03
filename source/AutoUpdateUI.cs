@@ -10,7 +10,7 @@ public partial class MainForm {
  AppRelease PendingRelease;string PendingUpdate;bool UpdatingApp;
  CancellationTokenSource UpdateCancel;
  System.Windows.Forms.Timer UpdatePoll;
- FButton UpdateBadge;Label UpdateStatus;
+ FButton UpdateBadge;Label UpdateStatus;FProgressBar AppDownloadBar;
  string UpdateMessage="Обновления ещё не проверялись.";
  void InitializeAppUpdates(Control top){
   UpdateBadge=new FButton{Text="Обновление FurZap",Bounds=new Rectangle(Math.Max(310,top.Width-305),47,275,28),Anchor=AnchorStyles.Top|AnchorStyles.Right,Visible=false};
@@ -31,6 +31,7 @@ public partial class MainForm {
   Check(c,"Проверять обновления FurZap при запуске и каждый час",23,85,B.Get("app-update-check","yes")=="yes",v=>{B.Pref["app-update-check"]=v?"yes":"no";B.SavePrefs();});
   Check(c,"Автоматически скачивать новую версию FurZap",23,123,B.Get("app-update-download","yes")=="yes",v=>{B.Pref["app-update-download"]=v?"yes":"no";B.SavePrefs();});
   UpdateStatus=L(c,UpdateMessage,23,161,c.Width-46,32,9);UpdateStatus.ForeColor=Theme.Muted;
+  AppDownloadBar=new FProgressBar{Bounds=new Rectangle(23,196,c.Width-46,11),Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right};c.Controls.Add(AppDownloadBar);
   Btn(c,"Проверить / установить",23,216,260,36,CheckAppUpdate,true);
   Btn(c,"Отменить загрузку",298,216,190,36,()=>{if(UpdateCancel!=null)UpdateCancel.Cancel();});
   Btn(c,"Вернуть FurZap",500,216,210,36,RollbackApp);
@@ -46,14 +47,16 @@ public partial class MainForm {
    if(release.Version<=typeof(MainForm).Assembly.GetName().Version){
     SetUpdateStatus("Установлена актуальная версия · "+DateTime.Now.ToString("HH:mm"));if(!automatic)Feedback("Обновлений нет","Установлена актуальная версия.");return;
    }
-   if(PendingRelease!=null&&PendingRelease.Version==release.Version&&PendingUpdate!=null){SetUpdateStatus("Обновление скачано и готово к установке.");return;}
+   string cached=await Task.Run(()=>AppUpdater.FindDownloaded(release,B.Data));if(IsDisposed||Disposing)return;
+   if(cached!=null){PendingRelease=release;PendingUpdate=cached;UpdateBadge.Visible=true;UpdateBadge.Text="Установить FurZap "+release.Version.ToString(3);SetUpdateStatus("Обновление скачано и готово к установке.");if(!automatic)InstallPendingUpdate();return;}
    PendingUpdate=null;PendingRelease=release;UpdateBadge.Visible=true;UpdateBadge.Text="Доступна FurZap "+release.Version.ToString(3);
    SetUpdateStatus("Доступна версия "+release.Version.ToString(3));
    if(automatic&&B.Get("app-update-download","yes")!="yes")return;
    using(var cancel=new CancellationTokenSource()){
-    UpdateCancel=cancel;
+    UpdateCancel=cancel;SetAppProgress(0,true);
     string staged=await Task.Run(()=>AppUpdater.Download(release,B.Data,cancel.Token,percent=>UI(()=>{
      SetUpdateStatus("Загрузка FurZap "+release.Version.ToString(3)+" · "+percent+"%");
+     SetAppProgress(percent,true);
      UpdateBadge.Text="Загрузка обновления · "+percent+"%";
     })));
     if(IsDisposed||Disposing)return;
@@ -64,8 +67,9 @@ public partial class MainForm {
    if(!automatic)InstallPendingUpdate();
   }catch(OperationCanceledException){if(!IsDisposed){SetUpdateStatus("Загрузка отменена. Повтори проверку, чтобы скачать.");UpdateBadge.Text="Скачать обновление FurZap";}}
   catch(Exception ex){if(!IsDisposed){SetUpdateStatus("Не удалось обновить: "+ex.Message);UpdateBadge.Text="Повторить обновление FurZap";Log("Обновление FurZap: "+ex.Message);if(!automatic)Error(ex);}}
-  finally{UpdateCancel=null;UpdatingApp=false;}
+   finally{UpdateCancel=null;UpdatingApp=false;SetAppProgress(0,false);}
  }
+ void SetAppProgress(int value,bool visible){if(AppDownloadBar!=null&&!AppDownloadBar.IsDisposed){AppDownloadBar.Value=value;AppDownloadBar.Visible=visible;}}
  internal void VerifyAutoUpdateUi(Action<bool,string> check,string dir){
   Navigate("Обновления");
   check(UpdateStatus!=null&&!UpdateStatus.IsDisposed,"update status visible in update center");
@@ -73,6 +77,7 @@ public partial class MainForm {
   check(card.Controls.Count>=8,"update settings, status and actions present");
   var toggles=new System.Collections.Generic.List<FToggle>();foreach(Control c in card.Controls)if(c is FToggle)toggles.Add((FToggle)c);
   check(toggles.Count==2,"app checking and downloading have separate toggles");
+  check(AppDownloadBar!=null&&!AppDownloadBar.Visible,"app progress bar begins hidden");SetAppProgress(50,true);check(AppDownloadBar.Visible&&AppDownloadBar.Value==50,"app progress bar shows percentage");SetAppProgress(0,false);
   foreach(var toggle in toggles){bool value=toggle.Checked;toggle.Checked=!value;toggle.Checked=value;}
   check(B.Get("app-update-check")=="yes"&&B.Get("app-update-download")=="yes","app update preferences persist");
   SetUpdateStatus("Test progress 50%");check(UpdateStatus.Text=="Test progress 50%","download progress reaches status label");

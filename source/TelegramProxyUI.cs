@@ -5,14 +5,23 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 namespace FurZap {
 public partial class MainForm {
- Label TgStatus;
+ Label TgStatus;TelegramProxyReadiness TgReadiness;DateTime TgLastProbe;bool TgProbing;System.Windows.Forms.Timer TgStatusPoll;
+ void InitTelegramStatusPoll(){TgStatusPoll=new System.Windows.Forms.Timer{Interval=5000};TgStatusPoll.Tick+=(s,e)=>{if(!B.Preview)RefreshTelegramStatus(TgProxy.State());};Shown+=(s,e)=>{if(!B.Preview)TgStatusPoll.Start();};Disposed+=(s,e)=>TgStatusPoll.Dispose();}
  void RefreshTelegramStatus(TelegramProxyState state){
-  string stateText=state.Running?"работает":state.OtherRunning?"запущена другая копия":"остановлен";
+  if(!state.Running){TgReadiness=null;TgLastProbe=DateTime.MinValue;}
+  else if(!TgProbing&&DateTime.UtcNow-TgLastProbe>TimeSpan.FromSeconds(4))ProbeTelegramStatus();
+  string stateText=state.Running?TgReadiness==null?"процесс запущен · проверяю порт":TgReadiness.Ready?"готов к подключению":"процесс запущен · "+TgReadiness.Detail:state.OtherRunning?"запущена другая копия":"остановлен";
   if(HomeProxyStatus!=null&&!HomeProxyStatus.IsDisposed)HomeProxyStatus.Text="TG WS Proxy · "+stateText;
   string endpoint="";
   if(state.Running||state.OtherRunning)try{var connection=TgProxy.Connection();endpoint=" · "+connection.Host+":"+connection.Port;}catch(Exception){endpoint=" · открой настройки прокси в трее";}
   if(HomeTgDetails!=null&&!HomeTgDetails.IsDisposed)HomeTgDetails.Text="Telegram: "+stateText+endpoint;
   if(TgStatus!=null&&!TgStatus.IsDisposed){TgStatus.Text="Состояние: "+stateText+endpoint+(state.Path==null?"":"\nФайл: "+state.Path);Hints.SetToolTip(TgStatus,state.Path??"Прокси из другой папки управляется через его собственный трей.");}
+ }
+ async void ProbeTelegramStatus(){
+  TgProbing=true;TgLastProbe=DateTime.UtcNow;
+  try{var ready=await Task.Run(()=>TelegramProxyManager.Probe(TgProxy.Connection()));if(IsDisposed||Disposing)return;TgReadiness=ready;}
+  catch(Exception ex){TgReadiness=new TelegramProxyReadiness{Detail=ex.Message};}
+  finally{TgProbing=false;if(!IsDisposed&&!Disposing&&TgProxy.State().Running)RefreshTelegramStatus(TgProxy.State());}
  }
  async void ConnectTelegram(){
   if(Busy||B.Preview)return;
@@ -22,7 +31,9 @@ public partial class MainForm {
     Busy=true;UseWaitCursor=true;
     try{await Task.Run(()=>TgProxy.Start());}finally{Busy=false;UseWaitCursor=false;RefreshState();}
    }
-   var connection=TgProxy.Connection();Open(connection.Link);
+   var connection=TgProxy.Connection();var ready=await Task.Run(()=>TgProxy.WaitReady(4000));
+   if(!ready.Ready)throw new Exception("TG WS Proxy запущен, но подключение ещё не готово: "+ready.Detail+". Проверь настройки и журнал прокси в его трее.");
+   Open(connection.Link);
    Feedback("Telegram открыт","Подтверди подключение к прокси в Telegram Desktop.");
   }catch(Exception ex){Error(ex);}
  }

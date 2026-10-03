@@ -4,6 +4,8 @@ using System.Linq;
 using System.Diagnostics;
 using System.Threading;
 using System.IO.Compression;
+using System.Net;
+using System.Net.Sockets;
 namespace FurZap {
 public static class Tests {
  static int count;
@@ -13,6 +15,11 @@ public static class Tests {
   string temp=Path.Combine(Path.GetTempPath(),"FurZap-tests-"+Guid.NewGuid().ToString("N"));string copy=Path.Combine(temp,"engine");
   try{foreach(string f in Directory.GetFiles(root,"*",SearchOption.AllDirectories)){string target=Path.Combine(copy,f.Substring(root.Length).TrimStart(new char[] {Path.DirectorySeparatorChar}));Directory.CreateDirectory(Path.GetDirectoryName(target));File.Copy(f,target);}
    var b=new Backend(copy,true);Check(b.Strategies.Length>=20,"all supplied strategies discovered");
+   string appCache=Path.Combine(b.Data,"updates",Guid.NewGuid().ToString("N"),"FurZap.exe");Directory.CreateDirectory(Path.GetDirectoryName(appCache));File.Copy(System.Windows.Forms.Application.ExecutablePath,appCache);
+   var appRelease=new AppRelease{Version=typeof(Tests).Assembly.GetName().Version,Size=new FileInfo(appCache).Length,Digest=AppUpdater.FileHash(appCache)};
+   Check(AppUpdater.FindDownloaded(appRelease,b.Data)==appCache,"completed FurZap update survives restart and is validated before reuse");
+   using(var stream=new FileStream(appCache,FileMode.Append))stream.WriteByte(0);
+   Check(AppUpdater.FindDownloaded(appRelease,b.Data)==null,"modified FurZap cache is rejected");
    Check(TelegramProxyUpdater.HasEmbedded,"official TG WS Proxy is embedded in FurZap.exe");string embedded=TelegramProxyUpdater.ExtractEmbedded(temp);Check(new FileInfo(embedded).Length==21330255&&AppUpdater.FileHash(embedded)=="b51436e8960307316135e64ac14753b1f3b0e7a46afe1bd6081353b82de20f09","embedded proxy extracts with verified official bytes");
    string fixture=Path.Combine(b.Data,"tools","TgWsProxy_windows.exe");Directory.CreateDirectory(Path.GetDirectoryName(fixture));File.Copy(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"ping.exe"),fixture,true);
    Process fixtureProcess=null;
@@ -26,8 +33,13 @@ public static class Tests {
    }finally{if(fixtureProcess!=null){if(!fixtureProcess.HasExited)fixtureProcess.Kill();fixtureProcess.Dispose();}File.Delete(fixture);}
    string staged=Path.Combine(b.Data,"tg-downloads","9.0","TgWsProxy_windows.exe");Directory.CreateDirectory(Path.GetDirectoryName(staged));File.Copy(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"ping.exe"),staged);
    var stagedRelease=new TelegramProxyRelease{Version="9.0",Size=new FileInfo(staged).Length,Digest=AppUpdater.FileHash(staged)};
+   File.Copy(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"where.exe"),fixture);
+   string previousDigest=AppUpdater.FileHash(fixture);
    TelegramProxyUpdater.InstallStaged(b,stagedRelease,staged);Check(TelegramProxyUpdater.Matches(fixture,stagedRelease),"downloaded Telegram proxy installs only after explicit apply");
+   Check(TelegramProxyUpdater.CanRollback(b.Data),"Telegram proxy update keeps a verified previous executable");
+   TelegramProxyUpdater.Rollback(b);Check(AppUpdater.FileHash(fixture)==previousDigest&&!TelegramProxyUpdater.CanRollback(b.Data),"Telegram proxy rollback restores previous bytes");
    stagedRelease.Digest=new string('0',64);Reject(()=>TelegramProxyUpdater.InstallStaged(b,stagedRelease,staged),"tampered Telegram proxy cannot replace installed version");File.Delete(fixture);
+   var listener=new TcpListener(IPAddress.Loopback,0);listener.Start();int port=((IPEndPoint)listener.LocalEndpoint).Port;var connection=new TelegramProxyConnection{Host="127.0.0.1",Port=port};Check(TelegramProxyManager.Probe(connection).Ready,"Telegram proxy readiness checks the actual local listener");listener.Stop();Check(!TelegramProxyManager.Probe(connection).Ready,"a running process alone cannot imply an open proxy port");
    foreach(string strategy in b.Strategies){string a=b.Arguments(strategy);Check(a.StartsWith("--wf-tcp=")&&!a.Contains("%")&&!a.Contains("^")&&!a.Contains("\n"),"parse "+strategy);Check(a.Contains("--new")&&a.Contains("--filter-"),"profiles retained: "+strategy);}
    Check(Backend.Ports("443, 1024-65535")=="443,1024-65535","port list normalization");foreach(string v in new[]{"0","65536","443-80","1&calc","-1","01","1,","","1-2-3"})Reject(()=>Backend.Ports(v),"invalid ports: "+v);
    Check(Backend.ValidIp("203.0.113.0/24")&&Backend.ValidIp("2001:db8::/32"),"valid IPv4 and IPv6 networks");foreach(string v in new[]{"999.1.2.3","1.2.3.4/33","1.2.3.4/-1","127.1","2001:db8::/129"})Check(!Backend.ValidIp(v),"invalid IP: "+v);

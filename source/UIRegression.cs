@@ -20,6 +20,10 @@ public partial class MainForm {
   check(introButton.Top>=introDescription.Bottom+8&&introButton.Bottom<=intro.Height-8,"update check button has its own row and remains fully visible");
   var components=Page.Controls.OfType<Card>().Where(c=>c.Controls.OfType<FToggle>().Any()).ToArray();
   check(components.Length==3&&components.All(c=>c.Controls.OfType<FToggle>().Count()==2),"all three components have check and download switches");
+  check(components.All(c=>c.Controls.OfType<FProgressBar>().Count()==1&&c.Controls.OfType<FProgressBar>().First().Bottom<c.Controls.OfType<FButton>().Min(b=>b.Top)),"three download progress bars fit above update actions");
+  check(components.SelectMany(c=>c.Controls.OfType<FProgressBar>()).All(p=>!p.Visible&&p.AccessibleName=="Ход загрузки обновления"),"download bars start hidden and expose accessible names");
+  check(components.Any(c=>c.Controls.OfType<FButton>().Any(b=>b.Text.StartsWith("Вернуть предыдущую версию TG"))),"Telegram proxy rollback is available in the update center");
+  BuildTray();check(Tray.ContextMenuStrip.Items.OfType<ToolStripItem>().Any(i=>i.Text=="Запустить TG WS Proxy")&&Tray.ContextMenuStrip.Items.OfType<ToolStripItem>().Any(i=>i.Text=="Остановить TG WS Proxy")&&Tray.ContextMenuStrip.Items.OfType<ToolStripItem>().Any(i=>i.Text=="Подключить Telegram"),"tray contains Telegram proxy controls");
   Refresh();Screenshot(Path.Combine(Path.GetDirectoryName(file),file.Contains("-200")?"updates-200.png":"updates.png"));Navigate("Инструменты");
   Refresh();Screenshot(file);
  }

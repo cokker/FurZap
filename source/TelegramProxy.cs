@@ -9,11 +9,13 @@ using System.ComponentModel;
 using System.Threading;
 using System.Reflection;
 using System.Text;
+using System.Net.Sockets;
 
 namespace FurZap {
 public sealed class TelegramProxyRelease {public string Version,Url,Digest;public long Size;}
 public sealed class TelegramProxyState {public bool Running,OtherRunning;public string Path;}
 public sealed class TelegramProxyConnection {public string Host,Link;public int Port;}
+public sealed class TelegramProxyReadiness {public bool Ready;public string Detail;}
 public static class TelegramProxyUpdater {
  const string Api="https://api.github.com/repos/Flowseal/tg-ws-proxy/releases/latest";
  const string EmbeddedName="FurZap.TgWsProxy.exe";
@@ -21,6 +23,7 @@ public static class TelegramProxyUpdater {
  const long EmbeddedSize=21330255;
  public const string EmbeddedVersion="1.10.4";
  static string VersionFile(string data){return Path.Combine(data,"tools","tg-ws-proxy-version.txt");}
+ static string BackupPointer(string data){return Path.Combine(data,"tg-backups","previous.txt");}
  static void RecordVersion(string data,string version,string digest){Backend.Atomic(VersionFile(data),version+"|"+digest);}
  public static string InstalledVersion(string file,string data){
   if(file==null)return HasEmbedded?EmbeddedVersion:"Не установлен";
@@ -72,23 +75,45 @@ public static class TelegramProxyUpdater {
  public static void InstallStaged(Backend b,TelegramProxyRelease release,string staged){
   if(!Matches(staged,release))throw new Exception("Скачанный TG WS Proxy повреждён. Повтори загрузку.");
   string dir=Path.Combine(b.Data,"tools"),target=Path.Combine(dir,"TgWsProxy_windows.exe");Directory.CreateDirectory(dir);
-  string temp=Path.Combine(dir,Guid.NewGuid().ToString("N")+".install");
+  string previous=File.Exists(target)?target:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tools","TgWsProxy_windows.exe");
+  string backupId=Guid.NewGuid().ToString("N"),backupDir=Path.Combine(b.Data,"tg-backups",backupId),backup=Path.Combine(backupDir,"TgWsProxy_windows.exe");
+  string oldMarker=File.Exists(VersionFile(b.Data))?File.ReadAllText(VersionFile(b.Data)):null;
+  string oldVersion=File.Exists(previous)?InstalledVersion(previous,b.Data):null,oldDigest=null;
+  if(File.Exists(previous)){Directory.CreateDirectory(backupDir);File.Copy(previous,backup);oldDigest=AppUpdater.FileHash(backup);if(oldDigest!=AppUpdater.FileHash(previous))throw new Exception("Резервная копия TG WS Proxy повреждена.");}
+  string temp=Path.Combine(dir,Guid.NewGuid().ToString("N")+".install");bool replaced=false;
   try{File.Copy(staged,temp);if(!Matches(temp,release))throw new Exception("Проверка TG WS Proxy при установке не пройдена.");
-   if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);RecordVersion(b.Data,release.Version,release.Digest);
+   if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);replaced=true;
+   RecordVersion(b.Data,release.Version,release.Digest);
+   if(oldDigest!=null)Backend.Atomic(BackupPointer(b.Data),backupId+"|"+oldVersion+"|"+oldDigest);
+  }catch{
+   if(replaced){if(File.Exists(target))File.Delete(target);if(oldDigest!=null)File.Copy(backup,target);if(oldMarker!=null)Backend.Atomic(VersionFile(b.Data),oldMarker);else if(File.Exists(VersionFile(b.Data)))File.Delete(VersionFile(b.Data));}
+   throw;
   }finally{if(File.Exists(temp))File.Delete(temp);}
  }
+ public static bool CanRollback(string data){try{string file,version,digest;return Backup(data,out file,out version,out digest);}catch{return false;}}
+ static bool Backup(string data,out string file,out string version,out string digest){
+  file=version=digest=null;string pointer=BackupPointer(data);if(!File.Exists(pointer))return false;
+  string[] parts=File.ReadAllText(pointer).Trim().Split('|');
+  if(parts.Length!=3||!Regex.IsMatch(parts[0],"^[a-f0-9]{32}$")||!Regex.IsMatch(parts[2],"^[a-f0-9]{64}$"))return false;
+  file=Path.Combine(data,"tg-backups",parts[0],"TgWsProxy_windows.exe");version=parts[1];digest=parts[2];
+  return File.Exists(file)&&String.Equals(AppUpdater.FileHash(file),digest,StringComparison.OrdinalIgnoreCase);
+ }
+ public static string Rollback(Backend b){
+  string file,version,digest;if(!Backup(b.Data,out file,out version,out digest))throw new Exception("Резервная копия TG WS Proxy отсутствует или повреждена.");
+  string dir=Path.Combine(b.Data,"tools"),target=Path.Combine(dir,"TgWsProxy_windows.exe");Directory.CreateDirectory(dir);
+  string temp=Path.Combine(dir,Guid.NewGuid().ToString("N")+".restore"),current=Path.Combine(dir,Guid.NewGuid().ToString("N")+".current");
+  string oldMarker=File.Exists(VersionFile(b.Data))?File.ReadAllText(VersionFile(b.Data)):null;
+  if(File.Exists(target))File.Copy(target,current);
+  try{File.Copy(file,temp);if(!String.Equals(AppUpdater.FileHash(temp),digest,StringComparison.OrdinalIgnoreCase))throw new Exception("Резервная копия изменилась при восстановлении.");
+   if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);
+   try{Backend.Atomic(VersionFile(b.Data),version+"|"+digest);File.Delete(BackupPointer(b.Data));return version;}
+   catch{if(File.Exists(target))File.Delete(target);if(File.Exists(current))File.Copy(current,target);if(oldMarker!=null)Backend.Atomic(VersionFile(b.Data),oldMarker);else if(File.Exists(VersionFile(b.Data)))File.Delete(VersionFile(b.Data));throw;}
+  }finally{if(File.Exists(temp))File.Delete(temp);if(File.Exists(current))File.Delete(current);}
+ }
  public static string Download(Backend b,TelegramProxyRelease release,CancellationToken token,Action<int> progress){
-  string dir=Path.Combine(b.Data,"tools");Directory.CreateDirectory(dir);string target=Path.Combine(dir,"TgWsProxy_windows.exe");
-  if(Matches(target,release)){RecordVersion(b.Data,release.Version,release.Digest);return target;}
-  string temp=Path.Combine(dir,"TgWsProxy-"+Guid.NewGuid().ToString("N")+".download");
-  try{
-   ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;var request=(HttpWebRequest)WebRequest.Create(release.Url);request.UserAgent="FurZap/1.4.1";request.Timeout=20000;request.ReadWriteTimeout=20000;
-   using(token.Register(()=>request.Abort()))using(var response=request.GetResponse())using(var input=response.GetResponseStream())using(var output=File.Create(temp)){
-    byte[] bytes=new byte[65536];long total=0;int n;while((n=input.Read(bytes,0,bytes.Length))>0){token.ThrowIfCancellationRequested();total+=n;if(total>release.Size)throw new Exception("Размер TG WS Proxy превышен.");output.Write(bytes,0,n);progress((int)(total*100/release.Size));}
-   }
-   token.ThrowIfCancellationRequested();if(!Matches(temp,release))throw new Exception("Файл TG WS Proxy не прошёл проверку SHA-256.");
-   if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);RecordVersion(b.Data,release.Version,release.Digest);return target;
-  }finally{if(File.Exists(temp))File.Delete(temp);}
+  string target=Path.Combine(b.Data,"tools","TgWsProxy_windows.exe");
+  if(Matches(target,release))return target;
+  string staged=Stage(b,release,token,progress);token.ThrowIfCancellationRequested();InstallStaged(b,release,staged);return target;
  }
 }
 public sealed class TelegramProxyManager {
@@ -127,6 +152,20 @@ public sealed class TelegramProxyManager {
   string path=ConfigFile;if(!File.Exists(path))throw new Exception("Сначала запусти TG WS Proxy и заверши его первоначальную настройку в трее.");
   if(new FileInfo(path).Length>65536)throw new Exception("Файл настроек TG WS Proxy слишком большой.");
   return ParseConnection(File.ReadAllText(path,Encoding.UTF8));
+ }
+ public static TelegramProxyReadiness Probe(TelegramProxyConnection connection){
+  IPAddress address;
+  if(!IPAddress.TryParse(connection.Host,out address)||!IPAddress.IsLoopback(address))return new TelegramProxyReadiness{Detail="проверка порта доступна только для локального адреса"};
+  try{using(var client=new TcpClient(address.AddressFamily)){
+   var result=client.BeginConnect(address,connection.Port,null,null);
+   if(!result.AsyncWaitHandle.WaitOne(350))return new TelegramProxyReadiness{Detail="порт "+connection.Port+" не отвечает"};
+   client.EndConnect(result);return new TelegramProxyReadiness{Ready=true,Detail="порт "+connection.Port+" готов"};
+  }}catch(SocketException){return new TelegramProxyReadiness{Detail="порт "+connection.Port+" не принимает подключения"};}
+ }
+ public TelegramProxyReadiness WaitReady(int milliseconds){
+  TelegramProxyConnection connection=Connection();var until=DateTime.UtcNow.AddMilliseconds(milliseconds);TelegramProxyReadiness result;
+  do{result=Probe(connection);if(result.Ready||!result.Detail.StartsWith("порт "))return result;Thread.Sleep(250);}while(DateTime.UtcNow<until);
+  return result;
  }
  internal static bool ManagedPath(string actual,string installed,string bundled){
   if(String.IsNullOrEmpty(actual))return false;

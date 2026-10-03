@@ -29,6 +29,17 @@ public class FButton:Control {
   else TextRenderer.DrawText(g,ok?(Text=="Выбрать"?"✓  Выбрано":"✓  Готово"):Text,Font,new Rectangle(12,0,Width-24,Height),fg,TextFormatFlags.VerticalCenter|TextFormatFlags.HorizontalCenter|TextFormatFlags.EndEllipsis);}
  protected override void Dispose(bool disposing){if(disposing)Motion.Frame-=Animate;base.Dispose(disposing);}
 }
+public class FProgressBar:Control {
+ int value;
+ public int Value{get{return value;}set{value=Math.Max(0,Math.Min(100,value));Invalidate();}}
+ public FProgressBar(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);Height=13;Visible=false;AccessibleName="Ход загрузки обновления";}
+ protected override void OnPaint(PaintEventArgs e){
+  e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+  using(var rail=Theme.Round(new RectangleF(0,0,Math.Max(1,Width-1),Math.Max(1,Height-1)),Height))using(var brush=new SolidBrush(Theme.Line))e.Graphics.FillPath(brush,rail);
+  float filled=(Width-1)*value/100f;
+  if(filled>2)using(var fill=Theme.Round(new RectangleF(0,0,filled,Math.Max(1,Height-1)),Math.Min(Height,filled)))using(var brush=new SolidBrush(Theme.Orange))e.Graphics.FillPath(brush,fill);
+ }
+}
 public class FInput:Control {
  readonly TextBox box=new TextBox{BorderStyle=BorderStyle.None,BackColor=Theme.Side,ForeColor=Theme.Text,Font=Theme.F(11)};
  public void SetZoom(float zoom){box.Font=Theme.F(11*zoom);box.SetBounds(12,(Height-box.PreferredHeight)/2,Math.Max(1,Width-24),box.PreferredHeight);}

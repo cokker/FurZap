@@ -42,7 +42,7 @@ public partial class MainForm:Form {
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.5.1",27,75,170,22,9).ForeColor=Theme.Muted;
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.5.2",27,75,170,22,9).ForeColor=Theme.Muted;
   string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Обновления","Проверки","Профили","Журнал"};string[] icons={"\uE80F","\uE8F1","\uE9F3","\uE713","\uE8FD","\uE90F","\uE896","\uE9D9","\uE77B","\uE81C"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*40,178,38,()=>Navigate(n));Nav[i].NavIcon=icons[i];}
   SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");Side.Resize+=(s,e)=>UpdateSidebarPetVisibility();L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
@@ -112,7 +112,7 @@ public partial class MainForm:Form {
     info.SetBounds(30,545,width,198);info.Controls[0].Width=width-45;
     info.Controls[1].SetBounds(23,52,width-45,24);
     info.Controls[2].SetBounds(22,82,195,36);info.Controls[3].SetBounds(228,82,195,36);
-    HomeTgDetails.SetBounds(23,121,width-46,23);HomeConnectButton.SetBounds(22,150,252,36);
+    HomeTgDetails.SetBounds(23,121,width-46,23);HomeConnectButton.SetBounds(22,150,width-44,36);
     footer.Top=759;
    }
    comfort.Top=wide?569:811;comfort.Width=width;

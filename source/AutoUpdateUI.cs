@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,7 +50,6 @@ public partial class MainForm {
    PendingUpdate=null;PendingRelease=release;UpdateBadge.Visible=true;UpdateBadge.Text="Доступна FurZap "+release.Version.ToString(3);
    SetUpdateStatus("Доступна версия "+release.Version.ToString(3));
    if(automatic&&B.Get("app-update-download","yes")!="yes")return;
-   if(!automatic&&!Confirm("Доступна FurZap "+release.Version.ToString(3)+"\n\n"+release.Notes+"\n\nСкачать обновление?"))return;
    using(var cancel=new CancellationTokenSource()){
     UpdateCancel=cancel;
     string staged=await Task.Run(()=>AppUpdater.Download(release,B.Data,cancel.Token,percent=>UI(()=>{
@@ -66,7 +66,7 @@ public partial class MainForm {
   catch(Exception ex){if(!IsDisposed){SetUpdateStatus("Не удалось обновить: "+ex.Message);UpdateBadge.Text="Повторить обновление FurZap";Log("Обновление FurZap: "+ex.Message);if(!automatic)Error(ex);}}
   finally{UpdateCancel=null;UpdatingApp=false;}
  }
- internal void VerifyAutoUpdateUi(Action<bool,string> check){
+ internal void VerifyAutoUpdateUi(Action<bool,string> check,string dir){
   Navigate("Обновления");
   check(UpdateStatus!=null&&!UpdateStatus.IsDisposed,"update status visible in update center");
   var card=UpdateStatus.Parent;
@@ -78,12 +78,17 @@ public partial class MainForm {
   SetUpdateStatus("Test progress 50%");check(UpdateStatus.Text=="Test progress 50%","download progress reaches status label");
   Navigate("Главная");Navigate("Обновления");check(UpdateStatus.Text=="Test progress 50%","update status survives navigation");
   check(!UpdatePoll.Enabled,"preview does not start network update timer");
+  using(var dialog=CreateAppUpdateDialog(new AppRelease{Version=new Version(1,5,2),Notes="# FurZap 1.5.2\n\n- Новое окно\n\n## Ранее в версии 1.5.1\n- Старая история"})){
+   var updateCard=dialog.Controls.OfType<Card>().First();var changes=updateCard.Controls.OfType<RichTextBox>().First();
+   check(dialog.ClientSize.Width<=700&&changes.Text.Contains("Новое окно")&&!changes.Text.Contains("Старая история"),"compact update dialog shows only latest notes");
+   using(var bmp=new Bitmap(dialog.ClientSize.Width,dialog.ClientSize.Height)){dialog.DrawToBitmap(bmp,new Rectangle(Point.Empty,bmp.Size));bmp.Save(Path.Combine(dir,"update-dialog.png"));}
+  }
   Navigate("Настройки");
  }
  void InstallPendingUpdate(){
   if(Busy||PendingUpdate==null||PendingRelease==null)return;
   if(HasUnsavedLists()){MessageBox.Show(this,"Сначала сохрани изменения в списках. Обновление уже скачано.","FurZap");return;}
-  if(!Confirm("Установить FurZap "+PendingRelease.Version.ToString(3)+" и перезапустить приложение?\n\n"+PendingRelease.Notes+"\n\nПроцесс движка FurZap будет остановлен. Служба продолжит работать. Папки engine и data сохраняются."))return;
+  using(var dialog=CreateAppUpdateDialog(PendingRelease))if(dialog.ShowDialog(this)!=DialogResult.Yes)return;
   try{AppUpdater.ValidateFile(PendingUpdate,PendingRelease);B.Stop();AppUpdater.LaunchInstaller(PendingUpdate);AllowExit=true;Close();}catch(Exception ex){Error(ex);}
  }
 }

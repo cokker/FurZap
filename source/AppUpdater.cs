@@ -24,6 +24,21 @@ public sealed class ReleaseJson {
 }
 public static class AppUpdater {
  const string Api="https://api.github.com/repos/cokker/FurZap/releases/latest";
+ public static string LatestChanges(string notes){
+  var lines=new List<string>();int length=0;
+  foreach(string raw in (notes??"").Replace("\r","").Split('\n')){
+   string line=raw.Trim();
+   if(System.Text.RegularExpressions.Regex.IsMatch(line,@"^#{1,4}\s*(Ранее|Предыдущ|История версий|Previous|Older)\b",System.Text.RegularExpressions.RegexOptions.IgnoreCase))break;
+   if(line.StartsWith("#"))continue;
+   if(line.Length==0){if(lines.Count>0&&lines[lines.Count-1]!="")lines.Add("");continue;}
+   if(line.StartsWith("- "))line="• "+line.Substring(2);
+   line=line.Replace("`","");
+   if(length+line.Length>1800||lines.Count(x=>x.StartsWith("• "))>=8)break;
+   lines.Add(line);length+=line.Length;
+  }
+  string result=String.Join("\r\n",lines).Trim();
+  return result.Length==0?"Описание последнего выпуска не опубликовано.":result;
+ }
  public static AppRelease ParseRelease(string json){var root=ReleaseJson.Parse(json);if((bool)root["draft"]||(bool)root["prerelease"])throw new Exception("Ожидается стабильный опубликованный релиз.");var version=new Version(((string)root["tag_name"]).TrimStart('v'));if(version.Build<0)throw new Exception("Неверная версия.");var asset=((List<object>)root["assets"]).Cast<Dictionary<string,object>>().SingleOrDefault(x=>(string)x["name"]=="FurZap.exe");if(asset==null)throw new Exception("В этом релизе нет файла автообновления. Скачай ZIP из GitHub Releases.");string url=(string)asset["browser_download_url"],digest=asset.ContainsKey("digest")?asset["digest"] as string:null;Uri uri;if(!Uri.TryCreate(url,UriKind.Absolute,out uri)||uri.Scheme!="https"||uri.Host!="github.com"||!uri.AbsolutePath.StartsWith("/cokker/FurZap/releases/download/",StringComparison.Ordinal)||!uri.AbsolutePath.EndsWith("/FurZap.exe",StringComparison.Ordinal)||!String.IsNullOrEmpty(uri.Query))throw new Exception("Неожиданный адрес файла.");if(digest==null||!System.Text.RegularExpressions.Regex.IsMatch(digest,@"^sha256:[0-9a-fA-F]{64}$"))throw new Exception("GitHub не предоставил SHA-256; установка отменена.");long size=Convert.ToInt64(asset["size"]);if(size<1024||size>100*1024*1024)throw new Exception("Неожиданный размер обновления.");return new AppRelease{Version=new Version(version.Major,version.Minor,version.Build,Math.Max(0,version.Revision)),Notes=root["body"] as string??"",Url=url,Digest=digest.Substring(7),Size=size};}
  static HttpWebRequest Request(string url){ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;var r=(HttpWebRequest)WebRequest.Create(url);r.UserAgent="FurZap-Updater/1.3";r.Accept="application/vnd.github+json";r.Timeout=20000;r.ReadWriteTimeout=20000;return r;}
  public static AppRelease Latest(){using(var response=Request(Api).GetResponse())using(var stream=response.GetResponseStream())using(var reader=new StreamReader(stream)){var b=new StringBuilder();char[] chunk=new char[4096];int n;while((n=reader.Read(chunk,0,chunk.Length))>0){b.Append(chunk,0,n);if(b.Length>2000000)throw new Exception("Слишком большой ответ GitHub.");}return ParseRelease(b.ToString());}}
@@ -34,4 +49,3 @@ public static class AppUpdater {
  public static int Install(string[] args){try{if(args.Length!=5||args[0]!="--install-update"||Environment.OSVersion.Platform!=PlatformID.Win32NT)throw new Exception("Неверный вызов обновления.");string target=Path.GetFullPath(args[1]),staged=Path.GetFullPath(args[2]);if(Path.GetFileName(target)!="FurZap.exe"||Path.GetFileName(staged)!="FurZap.exe"||target==staged||FileHash(staged)!=args[4]||AssemblyName.GetAssemblyName(staged).Name!="FurZap")throw new Exception("Проверка обновления не пройдена.");try{var parent=Process.GetProcessById(Int32.Parse(args[3]));if(!parent.WaitForExit(60000))throw new Exception("Закрой FurZap и повтори обновление.");}catch(ArgumentException){}string next=target+".new";File.Copy(staged,next,true);if(FileHash(next)!=args[4])throw new Exception("Файл изменился во время копирования.");string backup=target+"."+DateTime.UtcNow.ToString("yyyyMMddHHmmssfff")+".bak";File.Replace(next,target,backup);try{string data=Path.Combine(Path.GetDirectoryName(target),"data");Directory.CreateDirectory(data);File.AppendAllText(Path.Combine(data,"updates-history.txt"),DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+" | FurZap | "+AssemblyName.GetAssemblyName(backup).Version+" → "+AssemblyName.GetAssemblyName(target).Version+" | Установлено\r\n",Encoding.UTF8);}catch{}try{Process.Start(new ProcessStartInfo(target){UseShellExecute=true,WorkingDirectory=Path.GetDirectoryName(target)});}catch{File.Copy(backup,target,true);throw;}return 0;}catch(Exception ex){MessageBox.Show("Не удалось установить обновление.\n"+ex.Message,"FurZap");return 1;}}
 }
 }
-

@@ -39,6 +39,7 @@ public partial class MainForm {
   check(HomeProxyStart.Top>HeroBox.Controls.OfType<FButton>().First(b=>b.Text=="Запустить").Bottom&&HomeProxyStop.Top==HomeProxyStart.Top,"Telegram proxy actions sit below Zapret actions");
   check(HomeProxyStart.Bottom<HeroBox.Height&&HomeProxyStop.Bottom<HeroBox.Height,"Telegram proxy actions fit inside the home hero");
   check(HomeProxyStatus!=null&&HomeTgDetails!=null&&HomeConnectButton!=null&&HomeConnectButton.Text=="Подключить Telegram","home shows proxy state and quick Telegram connection");
+  check(HomeConnectButton.Top>=HomeTgDetails.Bottom&&HomeConnectButton.Left<=23*RenderZoom&&HomeConnectButton.Right>=HomeConnectButton.Parent.Width-25*RenderZoom,"Telegram connection is a full row below home controls");
   var cards=Page.Controls.OfType<Card>().OrderBy(c=>c.Top).ToArray();
   check(cards.Zip(cards.Skip(1),(a,b)=>a.Bottom<=b.Top||a.Right<=b.Left).All(x=>x),"home cards do not overlap");
  }
@@ -59,7 +60,7 @@ public static class UIRegression {
   using(var form=new MainForm(backend))using(var timer=new System.Windows.Forms.Timer{Interval=400}){
    int stage=0,startFrames=0,startPaints=0;double startTime=0;form.Shown+=(s,e)=>timer.Start();
    timer.Tick+=(s,e)=>{try{switch(stage++){
-    case 0:form.VerifyComfortUi(check,dir);form.VerifyEditorUi(check);form.VerifyScrollUi(check);form.VerifyAutoUpdateUi(check);break;
+    case 0:form.VerifyComfortUi(check,dir);form.VerifyEditorUi(check);form.VerifyScrollUi(check);form.VerifyAutoUpdateUi(check,dir);break;
     case 1:case 2:case 3:case 4:case 5:case 6:form.VerifyPopupUi(stage,check);break;
     case 7:form.ToggleFocusUi();break;
     case 8:form.Screenshot(Path.Combine(dir,"toggles.png"));form.BeginFrameSample();break;

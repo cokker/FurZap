@@ -6,6 +6,7 @@ using System.Threading;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
+using System.Xml;
 namespace FurZap {
 public static class Tests {
  static int count;
@@ -15,6 +16,8 @@ public static class Tests {
   string temp=Path.Combine(Path.GetTempPath(),"FurZap-tests-"+Guid.NewGuid().ToString("N"));string copy=Path.Combine(temp,"engine");
   try{foreach(string f in Directory.GetFiles(root,"*",SearchOption.AllDirectories)){string target=Path.Combine(copy,f.Substring(root.Length).TrimStart(new char[] {Path.DirectorySeparatorChar}));Directory.CreateDirectory(Path.GetDirectoryName(target));File.Copy(f,target);}
    var b=new Backend(copy,true);Check(b.Strategies.Length>=20,"all supplied strategies discovered");
+   string task=FurZapAutostart.XmlForTest(@"C:\FurZap & Friends\FurZap.exe","S-1-5-21-42");var xml=new XmlDocument();xml.LoadXml(task);var ns=new XmlNamespaceManager(xml.NameTable);ns.AddNamespace("t","http://schemas.microsoft.com/windows/2004/02/mit/task");
+   Check(xml.SelectSingleNode("//t:Actions/t:Exec/t:Command",ns).InnerText==@"C:\FurZap & Friends\FurZap.exe"&&xml.SelectSingleNode("//t:Actions/t:Exec/t:Arguments",ns).InnerText=="--tray"&&xml.SelectSingleNode("//t:Principals/t:Principal/t:RunLevel",ns).InnerText=="HighestAvailable","FurZap startup task launches this portable EXE elevated and hidden in tray");
    string appCache=Path.Combine(b.Data,"updates",Guid.NewGuid().ToString("N"),"FurZap.exe");Directory.CreateDirectory(Path.GetDirectoryName(appCache));File.Copy(System.Windows.Forms.Application.ExecutablePath,appCache);
    var appRelease=new AppRelease{Version=typeof(Tests).Assembly.GetName().Version,Size=new FileInfo(appCache).Length,Digest=AppUpdater.FileHash(appCache)};
    Check(String.Equals(AppUpdater.FindDownloaded(appRelease,b.Data),Path.GetFullPath(appCache),StringComparison.OrdinalIgnoreCase),"completed FurZap update survives restart and is validated before reuse");

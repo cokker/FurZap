@@ -20,7 +20,7 @@ jobs:
         run: |
           $compiler = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
           Push-Location source
-          & $compiler /nologo /codepage:65001 /resource:..\assets\dragon.png,FurZap.Dragon.png /resource:..\assets\dragon-happy.png,FurZap.DragonHappy.png /resource:..\assets\dragon-sleep.png,FurZap.DragonSleep.png /resource:..\tools\TgWsProxy_windows.exe,FurZap.TgWsProxy.exe /target:winexe /platform:x64 /optimize+ /win32manifest:app.manifest /win32icon:..\furzap.ico /out:..\FurZap.exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.ServiceProcess.dll /reference:System.Core.dll /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll *.cs
+          & $compiler /nologo /codepage:65001 /resource:..\assets\dragon.png,FurZap.Dragon.png /resource:..\assets\dragon-happy.png,FurZap.DragonHappy.png /resource:..\assets\dragon-sleep.png,FurZap.DragonSleep.png /resource:..\tools\TgWsProxy_windows.exe,FurZap.TgWsProxy.exe /target:winexe /platform:x64 /optimize+ /win32manifest:app.manifest /win32icon:..\furzap.ico /out:..\FurZap.exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.ServiceProcess.dll /reference:System.Core.dll /reference:System.Xml.dll /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll *.cs
           if ($LASTEXITCODE -ne 0) { throw "Compilation failed" }
           Pop-Location
       - name: Run logic and Windows UI regressions
@@ -57,8 +57,8 @@ jobs:
           $tag = "v$($version.Major).$($version.Minor).$($version.Build)"
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item FurZap.exe,FurZap.exe.config,furzap.ico,README.md,README.txt,RELEASE_NOTES.md,engine,assets,source,verification,tools,third_party -Destination package -Recurse
-          Compress-Archive -Path package\* -DestinationPath FurZap-Windows-x64.zip
+          Compress-Archive -Path package\* -DestinationPath FurZap-Portable-Windows-x64.zip
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) { throw "Release already exists; refusing to replace it" }
-          gh release create $tag FurZap.exe FurZap-Windows-x64.zip --target "${{ github.sha }}" --title "FurZap $tag" --notes-file RELEASE_NOTES.md
+          gh release create $tag FurZap.exe FurZap-Portable-Windows-x64.zip --target "${{ github.sha }}" --title "FurZap $tag" --notes-file RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { throw "Release failed" }

@@ -55,6 +55,7 @@ public class FList:Control {
  internal void CommitForTest(){if(Commit!=null)Commit(this,EventArgs.Empty);}
  public object SelectedItem{get{return selected>=0&&selected<Items.Count?Items[selected]:null;}set{SelectedIndex=Items.IndexOf(Convert.ToString(value));}}
  int Rows{get{return Math.Max(1,(Height-16)/RowHeight);}}int MaxOffset{get{return Math.Max(0,Items.Count-Rows);}}
+ internal int ScrollOffsetForTest{get{return offset;}}
  public FList(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint|ControlStyles.Selectable|ControlStyles.SupportsTransparentBackColor,true);BackColor=Color.Transparent;Font=Theme.F(11);TabStop=true;Cursor=Cursors.Hand;AccessibleRole=AccessibleRole.List;}
  protected override bool IsInputKey(Keys key){return (key&Keys.KeyCode)==Keys.Up||(key&Keys.KeyCode)==Keys.Down||(key&Keys.KeyCode)==Keys.Home||(key&Keys.KeyCode)==Keys.End||base.IsInputKey(key);}
  protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Down)SelectedIndex=Math.Min(Items.Count-1,selected+1);else if(e.KeyCode==Keys.Up)SelectedIndex=Math.Max(0,selected-1);else if(e.KeyCode==Keys.Home)SelectedIndex=0;else if(e.KeyCode==Keys.End)SelectedIndex=Items.Count-1;else if(e.KeyCode==Keys.Enter&&Commit!=null)Commit(this,e);else{base.OnKeyDown(e);return;}e.Handled=true;}
@@ -70,7 +71,7 @@ public class FList:Control {
 }
 public class DarkPopupRenderer:ToolStripProfessionalRenderer {protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e){}protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e){using(var b=new SolidBrush(Theme.Card))e.Graphics.FillRectangle(b,e.AffectedBounds);}}
 public class FCombo:Control {
- public List<string> Items=new List<string>();int selected=-1;bool over;ToolStripDropDown popup;public event EventHandler SelectedIndexChanged;
+ public List<string> Items=new List<string>();int selected=-1;bool over;ToolStripDropDown popup;static FCombo activePopup;public event EventHandler SelectedIndexChanged;
  public int SelectedIndex{get{return selected;}set{int v=Math.Max(-1,Math.Min(Items.Count-1,value));if(v==selected)return;selected=v;Invalidate();if(SelectedIndexChanged!=null)SelectedIndexChanged(this,EventArgs.Empty);}}
  public object SelectedItem{get{return selected>=0?Items[selected]:null;}set{SelectedIndex=Items.IndexOf(Convert.ToString(value));}}
  public override string Text{get{return selected>=0&&selected<Items.Count?Items[selected]:"";}set{SelectedItem=value;}}
@@ -95,12 +96,22 @@ public class FCombo:Control {
   popupList.Size=new Size(Math.Max(Width,250),Math.Min(8,Items.Count)*row+16);popup.Items[0].Size=popupList.Size;popup.Size=popupList.Size;
   Region oldRegion=popup.Region;using(var shape=Theme.Round(new RectangleF(0,0,popup.Width,popup.Height),18))popup.Region=new Region(shape);if(oldRegion!=null)oldRegion.Dispose();
   popup.Show(this,new Point(0,Height+4));popupList.Focus();Invalidate();
+  activePopup=this;
  }
- void PopupClosed(object sender,ToolStripDropDownClosedEventArgs e){if(!IsDisposed&&!Disposing)Invalidate();}
+ internal static bool TryScrollPopup(Panel page,Point screen,int delta,out bool scrolled){
+  scrolled=false;var combo=activePopup;
+  if(combo==null||combo.IsDisposed||combo.popup==null||!combo.popup.Visible||combo.FindForm()!=page.FindForm()||!combo.popup.Bounds.Contains(screen))return false;
+  scrolled=combo.popupList!=null&&combo.popupList.ScrollWheel(delta);
+  return true;
+ }
+ void PopupClosed(object sender,ToolStripDropDownClosedEventArgs e){if(activePopup==this)activePopup=null;if(!IsDisposed&&!Disposing)Invalidate();}
  internal void CommitForTest(int index){popupList.SelectedIndex=index;popupList.CommitForTest();}
+ internal FList PopupListForTest{get{return popupList;}}
+ internal Rectangle PopupBoundsForTest{get{return popup.Bounds;}}
+ internal void ClosePopupForTest(){if(popup!=null)popup.Close();}
  internal bool PopupDisposedForTest{get{return popup!=null&&popup.IsDisposed;}}
  protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;using(var p=Theme.Round(new RectangleF(1,1,Width-3,Height-3),14)){using(var b=new SolidBrush(over?Color.FromArgb(32,37,49):Theme.Side))g.FillPath(b,p);using(var pen=new Pen(Focused||(popup!=null&&popup.Visible)?Theme.Orange:Theme.Line))g.DrawPath(pen,p);}TextRenderer.DrawText(g,Text,Font,new Rectangle(12,0,Width-42,Height),Theme.Text,TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);using(var pen=new Pen(Theme.Orange,1.7f)){int x=Width-23,y=Height/2-2;g.DrawLines(pen,new[]{new Point(x-4,y),new Point(x,y+4),new Point(x+4,y)});}}
- protected override void Dispose(bool disposing){if(disposing&&popup!=null){var old=popup;popup=null;popupList=null;old.Closed-=PopupClosed;old.Dispose();}base.Dispose(disposing);}
+ protected override void Dispose(bool disposing){if(disposing){if(activePopup==this)activePopup=null;if(popup!=null){var old=popup;popup=null;popupList=null;old.Closed-=PopupClosed;old.Dispose();}}base.Dispose(disposing);}
 }
 public class FToggle:Control {
  bool isChecked; public event EventHandler CheckedChanged;

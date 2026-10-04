@@ -16,10 +16,15 @@ public sealed class PageWheelRouter : IMessageFilter, IDisposable {
  public bool PreFilterMessage(ref Message m){
   if(m.Msg!=0x020A||page.IsDisposed||!page.Visible||!page.Enabled)return false;
   long xy=m.LParam.ToInt64();Point screen=new Point(unchecked((short)(xy&65535)),unchecked((short)((xy>>16)&65535)));
+  int delta=unchecked((short)((m.WParam.ToInt64()>>16)&65535));
+  bool popupScrolled;
+  if(FCombo.TryScrollPopup(page,screen,delta,out popupScrolled)){
+   if(!popupScrolled)Route(page,delta,m.WParam,m.LParam);
+   return true;
+  }
   if(!page.RectangleToScreen(page.ClientRectangle).Contains(screen))return false;
   Control target=page;
   while(true){Control child=target.GetChildAtPoint(target.PointToClient(screen),GetChildAtPointSkip.Invisible|GetChildAtPointSkip.Disabled);if(child==null)break;target=child;}
-  int delta=unchecked((short)((m.WParam.ToInt64()>>16)&65535));
   Route(target,delta,m.WParam,m.LParam);return true;
  }
  internal void Route(Control target,int delta,IntPtr w,IntPtr l){

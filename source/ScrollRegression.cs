@@ -42,6 +42,22 @@ public partial class MainForm {
   check(output is RoundedTextBox&&output.Region!=null,"check output rounded");
   check(output.Height<=110*RenderZoom,"check status compact");
   Navigate("Настройки");
+  Page.AutoScrollPosition=Point.Empty;
+  var combo=Page.Controls.OfType<Card>().SelectMany(c=>c.Controls.OfType<FCombo>()).First(c=>c.Items.Count>8);
+  combo.ShowPopup();var dropdown=combo.PopupListForTest;
+  check(dropdown!=null&&combo.PopupBoundsForTest.Width>0,"game packet dropdown opens");
+  using(var router=new PageWheelRouter(Page)){
+   dropdown.SelectedIndex=0;Point point=new Point(combo.PopupBoundsForTest.Left+20,combo.PopupBoundsForTest.Top+20);
+   IntPtr location=new IntPtr(((long)(ushort)point.Y<<16)|(ushort)point.X);
+   var down=Message.Create(dropdown.Handle,0x020A,new IntPtr(unchecked(-120<<16)),location);
+   check(router.PreFilterMessage(ref down)&&dropdown.ScrollOffsetForTest>0&&Page.AutoScrollPosition.Y==0,"wheel over open dropdown scrolls list first");
+   dropdown.SelectedIndex=dropdown.Items.Count-1;
+   check(router.PreFilterMessage(ref down)&&Page.AutoScrollPosition.Y<0,"dropdown bottom passes wheel to page");
+   var up=Message.Create(dropdown.Handle,0x020A,new IntPtr(120<<16),location);
+   dropdown.SelectedIndex=0;int before=Page.AutoScrollPosition.Y;
+   check(router.PreFilterMessage(ref up)&&Page.AutoScrollPosition.Y>before,"dropdown top passes wheel to page");
+  }
+  combo.ClosePopupForTest();
  }
 }
 }

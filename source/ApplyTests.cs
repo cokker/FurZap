@@ -26,6 +26,7 @@ public static class ApplyTests {
   EngineActions.Start(controls,selected);check(controls.State==4&&controls.Starts==0,"home start restarts installed service without launching another winws");
   controls.State=0;controls.Live=true;EngineActions.Stop(controls);check(!controls.Live&&controls.State==0,"home stop still stops ordinary process");
   EngineActions.Start(controls,selected);check(controls.Live&&controls.Starts==1,"home start still launches ordinary process");
+  check(Backend.Ports(" 1024\u201365535 ")=="1024-65535"&&Backend.Ports("1024\u201465535")=="1024-65535"&&Backend.Ports("1024\u221265535")=="1024-65535","copied port ranges normalize Unicode dashes");
   var b=new ApplyTestBackend(root);string strategy=b.Strategies[0];b.Pref["strategy"]=strategy;b.ActiveStrategy=strategy;b.Live=true;
   b.Settings("all","444","555","any");check(b.Live&&b.Starts==1&&b.Game()["tcp"]=="444","saving settings restarts live process with new ports");
   b.SaveList("list-general-user.txt","first.example\n");check(b.Starts==2&&b.Live,"saving lists restarts live process");
@@ -35,6 +36,11 @@ public static class ApplyTests {
   b.FailNext=true;reject(()=>b.SelectStrategy(b.Strategies[1]),"failed strategy switch rolls back");check(b.Get("strategy")==strategy&&b.ActiveStrategy==strategy&&b.Live,"strategy preference and active strategy restored");
   b.Live=false;int starts=b.Starts;b.SaveList("list-general-user.txt","stopped.example\n");check(!b.Live&&b.Starts==starts,"stopped process stays stopped");
   b.State=4;b.Settings("tcp","443","555","none");check(b.State==4&&!b.Live&&b.Installs==1&&b.Command.Contains("443"),"running service reconfigured and restarted");
+  string gameBefore=File.ReadAllText(b.P("utils/game_filter.enabled"));int installsBefore=b.Installs;
+  reject(()=>b.Settings("all","1024\u201365536","555","none"),"invalid copied range rejected before stopping service");
+  check(b.State==4&&b.Installs==installsBefore&&File.ReadAllText(b.P("utils/game_filter.enabled"))==gameBefore,"invalid port range leaves service and settings unchanged");
+  b.Settings("all","1024\u201365535","1024\u201465535","none");
+  check(b.State==4&&b.Installs==installsBefore+1&&b.Game()["tcp"]=="1024-65535"&&b.Game()["udp"]=="1024-65535","restoring copied default port ranges restarts service and writes ASCII ranges");
   string command=b.Command,marker=b.Marker;original=File.ReadAllText(b.P("lists/list-general-user.txt"));b.FailNext=true;
   reject(()=>b.SaveList("list-general-user.txt","service-fail.example\n"),"failed service restart reports rollback");check(b.State==4&&b.Command==command&&b.Marker==marker&&File.ReadAllText(b.P("lists/list-general-user.txt"))==original,"service rollback restores command marker content and running state");
   b.State=1;b.SelectStrategy(b.Strategies[1]);check(b.State==1&&!b.Live,"stopped service receives config without starting");

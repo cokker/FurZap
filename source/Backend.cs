@@ -33,12 +33,16 @@ public partial class Backend {
  public string P(string rel){return Path.Combine(Root,rel.Replace('/',Path.DirectorySeparatorChar));}
  public static string Quote(string s) {return "\""+Regex.Replace(s,@"(\\*)\""", "$1$1\\\"")+Regex.Match(s,@"\\*$").Value+"\"";}
  public static string Ports(string s) {
-  s=s.Replace(" ",""); if(s.Length==0)throw new Exception("Укажи порты, например 1024-65535 или 443,50000-50100.");
+  s=Regex.Replace(s,@"\s+","").Replace('\u2010','-').Replace('\u2011','-').Replace('\u2012','-').Replace('\u2013','-').Replace('\u2014','-').Replace('\u2015','-').Replace('\u2212','-').Replace('\uFE63','-').Replace('\uFF0D','-');
+  if(s.Length==0)throw new Exception("Укажи порты, например 1024-65535 или 443,50000-50100.");
   foreach(string item in s.Split(new char[] {','})){if(!Regex.IsMatch(item,@"^[1-9][0-9]{0,4}(-[1-9][0-9]{0,4})?$"))throw new Exception("Неверный диапазон портов: "+item);int[] n=item.Split(new char[] {'-'}).Select(int.Parse).ToArray(); if(n.Any(x=>x>65535)||(n.Length==2&&n[0]>n[1]))throw new Exception("Порты должны быть от 1 до 65535, по возрастанию.");}return s;
  }
  public Dictionary<string,string> Game(){var d=new Dictionary<string,string>{{"mode","disabled"},{"tcp","1024-65535"},{"udp","1024-65535"}}; if(File.Exists(P("utils/game_filter.enabled")))foreach(string l in File.ReadAllLines(P("utils/game_filter.enabled"))){var v=l.Split(new char[] {'='});if(v.Length==2&&d.ContainsKey(v[0]))d[v[0]]=v[1];else if(v.Length==1&&new[]{"all","tcp","udp"}.Contains(l))d["mode"]=l;}return d;}
  public string IpMode(){string s=File.ReadAllText(P("lists/ipset-all.txt"));return String.IsNullOrWhiteSpace(s)?"any":s.Contains("203.0.113.113/32")?"none":"loaded";}
- public void Settings(string mode,string tcp,string udp,string ipmode){ApplyChange("Сохранение конфигурации",()=>SettingsCore(mode,tcp,udp,ipmode));}
+ public void Settings(string mode,string tcp,string udp,string ipmode){
+  tcp=Ports(tcp);udp=Ports(udp);if(!new[]{"disabled","all","tcp","udp"}.Contains(mode))throw new Exception("Неизвестный режим.");
+  ApplyChange("Сохранение конфигурации",()=>SettingsCore(mode,tcp,udp,ipmode));
+ }
  void SettingsCore(string mode,string tcp,string udp,string ipmode){
   tcp=Ports(tcp);udp=Ports(udp);if(!new[]{"disabled","all","tcp","udp"}.Contains(mode))throw new Exception("Неизвестный режим.");
   string file=P("lists/ipset-all.txt"), bak=file+".backup", old=IpMode();

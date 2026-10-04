@@ -39,6 +39,8 @@ public partial class MainForm {
   Navigate("Главная");check(Subtitle.Text=="Главная","can leave unchanged list without a prompt");VerifyHomeActions(check);Navigate("Списки");var combo=Page.Controls.OfType<FCombo>().First();combo.SelectedIndex=3;check(!Dirty,"switching loaded files does not dirty editor");Navigate("Настройки");
  }
  internal void VerifyHomeActions(Action<bool,string> check){
+  check(HomeEngineStart!=null&&HomeEngineStop!=null&&HomeEngineStart.Parent==HeroBox&&HomeEngineStop.Parent==HeroBox,"home has engine controls for process or service mode");
+  check(HomeEngineStart.Enabled&&!HomeEngineStop.Enabled,"stopped engine presents start action on home");
   check(Nav.All(n=>n.NavIcon.Length>0)&&Nav.Select(n=>n.NavIcon).Distinct().Count()==Nav.Length,"every navigation section has a separate icon");
   check(HomeProxyStart!=null&&HomeProxyStop!=null&&HomeProxyStart.Parent==HeroBox&&HomeProxyStop.Parent==HeroBox,"Telegram proxy start and stop are in the home hero");
   check(HomeProxyStart.Top>HeroBox.Controls.OfType<FButton>().First(b=>b.Text=="Запустить").Bottom&&HomeProxyStop.Top==HomeProxyStart.Top,"Telegram proxy actions sit below Zapret actions");

@@ -21,6 +21,11 @@ sealed class ApplyTestBackend:Backend {
 }
 public static class ApplyTests {
  public static void Run(string root,Action<bool,string> check,Action<Action,string> reject){
+  var controls=new ApplyTestBackend(root);string selected=controls.Strategies[0];
+  controls.State=4;EngineActions.Stop(controls);check(controls.State==1&&controls.Starts==0,"home stop stops installed service instead of only the process");
+  EngineActions.Start(controls,selected);check(controls.State==4&&controls.Starts==0,"home start restarts installed service without launching another winws");
+  controls.State=0;controls.Live=true;EngineActions.Stop(controls);check(!controls.Live&&controls.State==0,"home stop still stops ordinary process");
+  EngineActions.Start(controls,selected);check(controls.Live&&controls.Starts==1,"home start still launches ordinary process");
   var b=new ApplyTestBackend(root);string strategy=b.Strategies[0];b.Pref["strategy"]=strategy;b.ActiveStrategy=strategy;b.Live=true;
   b.Settings("all","444","555","any");check(b.Live&&b.Starts==1&&b.Game()["tcp"]=="444","saving settings restarts live process with new ports");
   b.SaveList("list-general-user.txt","first.example\n");check(b.Starts==2&&b.Live,"saving lists restarts live process");

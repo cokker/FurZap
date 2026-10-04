@@ -32,7 +32,7 @@ public class Hero:Card {
  }
 }
 public partial class MainForm:Form {
- Backend B;TelegramProxyManager TgProxy;FButton HomeProxyStart,HomeProxyStop,HomeConnectButton;Label HomeProxyStatus,HomeTgDetails;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
+ Backend B;TelegramProxyManager TgProxy;FButton HomeEngineStart,HomeEngineStop,HomeProxyStart,HomeProxyStop,HomeConnectButton;Label HomeProxyStatus,HomeTgDetails;Panel Side,Page;Label Subtitle,Toast;FButton[] Nav;Hero HeroBox;Dragon SidebarPet;NotifyIcon Tray;FramePump Timer;Process ExternalTool;
  Action HomeLayout=delegate{};Action ViewLayout=delegate{};FeedbackCard Notice;double repaintAfter=Motion.Now+.12;double noticeUntil;FButton ActionButton;FList StrategyList;Label AppliedLabel;
  string Selected;bool Busy,AllowExit;RichTextBox ListEditor;string ListBaseline="";bool Dirty{get{return ListEditor!=null&&!ListEditor.IsDisposed&&!ListEditor.Disposing&&ListDocument.Changed(ListBaseline,ListEditor.Text);}}RichTextBox LogView;StringBuilder Journal=new StringBuilder();string CurrentLog;
  [DllImport("dwmapi.dll")]static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
@@ -42,7 +42,7 @@ public partial class MainForm:Form {
   Selected=B.Get("strategy","general.bat");if(!B.Strategies.Contains(Selected))Selected=B.Strategies.First();
   CurrentLog=Path.Combine(B.Data,"furzap.log");if(File.Exists(CurrentLog)&&new FileInfo(CurrentLog).Length>2000000)File.Move(CurrentLog,CurrentLog+"."+DateTime.Now.ToString("yyyyMMddHHmmss"));
   Side=new Panel{Dock=DockStyle.Left,Width=213,BackColor=Theme.Side};Controls.Add(Side);Side.Paint+=(s,e)=>{using(var p=new Pen(Theme.Line))e.Graphics.DrawLine(p,212,0,212,Side.Height);};
-  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.6.1",27,75,170,22,9).ForeColor=Theme.Muted;
+  Label brand=L(Side,"FurZap",25,31,163,38,23,true);brand.ForeColor=Theme.Text;L(Side,"by COKKER  /  v1.6.2",27,75,170,22,9).ForeColor=Theme.Muted;
   string[] names={"Главная","Стратегии","Служба","Настройки","Списки","Инструменты","Обновления","Проверки","Профили","Журнал"};string[] icons={"\uE80F","\uE8F1","\uE9F3","\uE713","\uE8FD","\uE90F","\uE896","\uE9D9","\uE77B","\uE81C"};Nav=new FButton[names.Length];for(int i=0;i<names.Length;i++){string n=names[i];Nav[i]=Btn(Side,n,17,120+i*40,178,38,()=>Navigate(n));Nav[i].NavIcon=icons[i];}
   SidebarPet=new Dragon{Bounds=new Rectangle(42,Side.Height-221,125,110),Anchor=AnchorStyles.Left|AnchorStyles.Bottom,Reduced=true};Side.Controls.Add(SidebarPet);SidebarPet.Cursor=Cursors.Hand;SidebarPet.Click+=(s,e)=>Feedback("Буп!","Рад тебя видеть.");Side.Resize+=(s,e)=>UpdateSidebarPetVisibility();L(Side,"Маленький дракон.\nБольшая сеть.",26,Side.Height-99,168,45,10).Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
   var ver=L(Side,"ZAPRET ENGINE  "+B.EngineVersion,26,Side.Height-45,180,25,8);ver.ForeColor=Theme.Muted;ver.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
@@ -73,7 +73,8 @@ public partial class MainForm:Form {
 
  void Home(){
   HeroBox=new Hero{Location=new Point(30,22),Size=new Size(Math.Max(750,ContentWidth-61),282),Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top};Page.Controls.Add(HeroBox);HeroBox.Pet.Left=HeroBox.Width-319;HeroBox.Pet.Cursor=Cursors.Hand;HeroBox.Pet.Click+=(s,e)=>Feedback("Буп!","Дракончик рядом.");
-  Btn(HeroBox,"Запустить",28,220,155,42,()=>Work(()=>B.Start(Selected)),true);Btn(HeroBox,"Остановить",194,220,145,42,()=>Work(()=>B.Stop()));
+  HomeEngineStart=Btn(HeroBox,"Запустить",28,220,155,42,()=>Work(()=>EngineActions.Start(B,Selected)),true);
+  HomeEngineStop=Btn(HeroBox,"Остановить",194,220,145,42,()=>Work(()=>EngineActions.Stop(B)));
   HomeProxyStatus=L(HeroBox,"TG WS Proxy",28,267,390,22,10,true);HomeProxyStatus.ForeColor=Theme.Muted;HomeProxyStatus.BackColor=Color.Transparent;
   HomeProxyStart=Btn(HeroBox,"Запустить TG",28,290,155,42,()=>Work(()=>TgProxy.Start()),true);
   HomeProxyStop=Btn(HeroBox,"Остановить TG",194,290,145,42,()=>Work(()=>TgProxy.Stop()));
@@ -122,7 +123,7 @@ public partial class MainForm:Form {
   };
   HomeLayout();RefreshState();
  }
- void RefreshState(){RefreshExtras();RefreshComfort();var proxy=TgProxy.State();if(HomeProxyStart!=null&&!HomeProxyStart.IsDisposed)HomeProxyStart.Enabled=!proxy.Running&&!proxy.OtherRunning;if(HomeProxyStop!=null&&!HomeProxyStop.IsDisposed)HomeProxyStop.Enabled=proxy.Running;if(HomeConnectButton!=null&&!HomeConnectButton.IsDisposed)HomeConnectButton.Enabled=!Busy&&TgProxy.Available;RefreshTelegramStatus(proxy);if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":B.Running?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):B.ServiceState()==4?"Запущена служба Windows":"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
+ void RefreshState(){RefreshExtras();RefreshComfort();int service=B.ServiceState();bool engineRunning=service!=0?service==4:B.Running;if(HomeEngineStart!=null&&!HomeEngineStart.IsDisposed)HomeEngineStart.Enabled=!Busy&&!engineRunning;if(HomeEngineStop!=null&&!HomeEngineStop.IsDisposed)HomeEngineStop.Enabled=!Busy&&engineRunning;var proxy=TgProxy.State();if(HomeProxyStart!=null&&!HomeProxyStart.IsDisposed)HomeProxyStart.Enabled=!proxy.Running&&!proxy.OtherRunning;if(HomeProxyStop!=null&&!HomeProxyStop.IsDisposed)HomeProxyStop.Enabled=proxy.Running;if(HomeConnectButton!=null&&!HomeConnectButton.IsDisposed)HomeConnectButton.Enabled=!Busy&&TgProxy.Available;RefreshTelegramStatus(proxy);if(HeroBox==null||HeroBox.IsDisposed)return;string s=B.Preview?"Предпросмотр интерфейса":service==4?"Запущена служба Windows":engineRunning?"Движок запущен · "+Path.GetFileNameWithoutExtension(B.ActiveStrategy):"Движок остановлен";if(HeroBox.Status!=s){HeroBox.Status=s;HeroBox.Invalidate();}}
  void Choose(string s,bool start=false){
   if(B.Preview){Selected=s;return;}
   Work(()=>B.SelectStrategy(s,start),()=>{Selected=B.Get("strategy",s);if(StrategyList!=null){StrategyList.Applied=Selected;StrategyList.Invalidate();}if(AppliedLabel!=null)AppliedLabel.Text="✓ Выбрано: "+Path.GetFileNameWithoutExtension(Selected);});
